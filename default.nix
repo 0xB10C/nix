@@ -6,4 +6,5 @@
   overlays = import ./overlays;
 
   miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
+  github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
 }
