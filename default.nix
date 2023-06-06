@@ -5,6 +5,7 @@
   modules = import ./modules;
   overlays = import ./overlays;
 
-  miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
   fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
+  github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
+  miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
 }
