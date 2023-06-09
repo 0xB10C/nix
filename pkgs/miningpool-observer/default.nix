@@ -6,13 +6,20 @@ pkgs.rustPlatform.buildRustPackage rec {
   src = fetchFromGitHub {
     owner = "0xB10C";
     repo = "miningpool-observer";
-    rev = "026799372ae9a1d603e59ab1b71623ed22a66cbc";
-    sha256 = "sha256-d+uFWIplWJZ9BANOHfHX0ma/z+lhkvUEfTf4jWbyYFE=";
+    rev = "d93ea406620ead8305f08689acd7015c38784a2f";
+    sha256 = "sha256-0OuVeRfbpM8vZ3YIIT2OXIDDvzkfnnqp6TLc2cm09uI=";
   };
 
   buildInputs = [ pkgs.postgresql ];
 
-  cargoSha256 = "sha256-X0DM+XDmTNWvwqQN4UMyiPDFGzEZXMWzPPhmz+WeVCI=";
+  cargoLock = {
+    lockFile = ./Cargo.lock;
+    outputHashes = {
+      "bitcoincore-rpc-0.17.0" = "sha256-EPXrqAgme9iXzFRqTAhOlAy6JtzXY9o+MuTWhhqW+oI=";
+    };
+  };
+
+  cargoHash = "";
 
   postInstall = ''
     cp -r www $out/www
