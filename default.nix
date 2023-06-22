@@ -11,4 +11,5 @@
   github-metadata-backup = pkgs.callPackage ./pkgs/github-metadata-backup { };
   github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
   miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
+  peer-observer = pkgs.callPackage ./pkgs/peer-observer { };
 }
