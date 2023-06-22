@@ -3,4 +3,5 @@
   fork-observer = ./fork-observer;
   github-metadata-backup = ./github-metadata-backup;
   github-metadata-mirror = ./github-metadata-mirror;
+  peer-observer = ./peer-observer;
 }
