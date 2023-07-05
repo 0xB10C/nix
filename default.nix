@@ -6,4 +6,5 @@
   overlays = import ./overlays;
 
   miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
+  fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
 }
