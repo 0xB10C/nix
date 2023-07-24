@@ -4,10 +4,11 @@ rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
 
-  src = builtins.fetchGit {
-    url = "git@github.com:0xB10C/fork-observer.git";
-    ref = "main";
+  src = pkgs.fetchFromGitHub {
+    owner = "0xB10C";
+    repo = "fork-observer";
     rev = "cc2b9432948a5bdb77beb2ecaf283d539e3bea83";
+    sha256 = "sha256-5bBULezCx2rB4AGI4/M9k0ChyOVYoAZTqo8/Mthhta8=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
