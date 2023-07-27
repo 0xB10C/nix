@@ -107,6 +107,12 @@ in {
           }\
           ${optionalString (cfg.personalAccessToken != null)
           "--personal-access-token=${cfg.personalAccessToken}"}
+
+          ${pkgs.git}/bin/git -C ${cfg.destination} init
+          ${pkgs.git}/bin/git -C ${cfg.destination} add state.json issues pulls
+          ${pkgs.git}/bin/git -C ${cfg.destination} config user.name "${cfg.owner}:${cfg.repository}"
+          ${pkgs.git}/bin/git -C ${cfg.destination} config user.email "${cfg.owner}-${cfg.repository}@github-metadata-backup"
+          ${pkgs.git}/bin/git -C ${cfg.destination} commit -m "${cfg.owner}:${cfg.repository} GitHub backup from $(date)"
         '';
         serviceConfig = {
           User = cfg.user;
