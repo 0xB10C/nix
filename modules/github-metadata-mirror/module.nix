@@ -4,17 +4,12 @@ with lib;
 
 let
   package = pkgs.callPackage ../../pkgs/github-metadata-mirror { };
-  eachGithubMetadataMirrorInstance = config.services.github-metadata-mirror;
+  eachGithubMetadataMirrorInstance = config.services.github-metadata-mirror.mirrors;
+  cfg = config.services.github-metadata-mirror;
 
   github-metadata-mirror-options = { config, lib, name, ... }: {
     options = {
       enable = mkEnableOption (lib.mdDoc "GitHub metadata mirror tool");
-
-      package = mkOption {
-        type = types.package;
-        default = package;
-        description = lib.mdDoc "The package providing the github-metadata-mirror binary.";
-      };
 
       backup = mkOption {
         type = types.path;
@@ -22,10 +17,10 @@ let
         description = lib.mdDoc "The source directory for the backup JSON files.";
       };
 
-      wwwDir = mkOption {
-        type = types.path;
-        default = "/var/www/github-metadata-mirror/${name}";
-        description = lib.mdDoc "The directory where to generate the HTML files to.";
+      compressBackup = mkOption {
+        type = types.bool;
+        default = true;
+        description = lib.mkDoc "Whether to store a compressed copy of the backup in the `wwwDir`.";
       };
 
       siteName = mkOption {
@@ -36,7 +31,7 @@ let
 
       siteBaseURL = mkOption {
         type = types.str;
-        example = "https://exmaple.com/my-github-metadata-mirror";
+        example = "https://example.com/my-github-metadata-mirror";
         description = lib.mdDoc "The hugo site base URL. This is passed to hugo with the '--baseURL' flag";
       };
 
@@ -61,20 +56,6 @@ let
         description = lib.mkDoc "Name of the mirrored repository on GitHub. Used to link to GitHub: https://github.com/<owner>/<repository>";
       };
 
-      user = mkOption {
-        type = types.str;
-        default = "gmm-${name}";
-        description =
-          lib.mdDoc "The user as which to run the github-metadata-mirror tool";
-      };
-
-      group = mkOption {
-        type = types.str;
-        default = "github-metadata";
-        description = lib.mdDoc
-          "The group as which to run the github-metadata-mirror tool.";
-      };
-
       goMaxProcs = mkOption {
         type = types.nullOr types.int;
         default = null;
@@ -91,23 +72,49 @@ let
     };
   };
 in {
-
   options = {
-    services.github-metadata-mirror = mkOption {
-      type = types.attrsOf (types.submodule github-metadata-mirror-options);
-      default = { };
-      description = lib.mdDoc
-        "Specification of one or more github-metadata-mirror jobs.";
+    services.github-metadata-mirror = {
+      mirrors = mkOption {
+        type = types.attrsOf (types.submodule github-metadata-mirror-options);
+        default = { };
+        description = lib.mdDoc
+          "Specification of one or more github-metadata-mirror jobs.";
+      };
+
+      user = mkOption {
+        type = types.str;
+        default = "github-metadata-backup";
+        description =
+          lib.mdDoc "The user as which to run the github-metadata-mirror tool";
+      };
+
+      group = mkOption {
+        type = types.str;
+        default = "github-metadata";
+        description = lib.mdDoc
+          "The group as which to run the github-metadata-mirror tool.";
+      };
+
+      wwwDir = mkOption {
+        type = types.path;
+        default = "/var/www/github-metadata-mirror";
+        description = lib.mdDoc "The parent directory of the directory where to generate the HTML files to.";
+      };
+
+      package = mkOption {
+        type = types.package;
+        default = package;
+        description = lib.mdDoc "The package providing the github-metadata-mirror binary.";
+      };
     };
   };
 
   config = mkIf (eachGithubMetadataMirrorInstance != { }) {
-    systemd.services = mapAttrs' (instanceName: cfg:
+    systemd.services = mapAttrs' (instanceName: instanceCfg:
       (nameValuePair "github-metadata-mirror-${instanceName}" ({
         description = "GitHub Metadata Mirror ${instanceName}";
         after = [ "network-online.target" ];
         script = ''
-          #set -x
           set -e
 
           WORK_DIR=`mktemp -d -t "github-metadata-mirror-XXXXXXXX"`
@@ -125,21 +132,28 @@ in {
           echo "copy the github-metadata-mirror package contents from ${cfg.package} to $WORK_DIR"
           cp --recursive --no-preserve=ownership,mode ${cfg.package}/* $WORK_DIR
 
-          echo "generate the issue and pull markdown files to the hugo content and data directories from the backup files in ${cfg.backup}"
-          ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${cfg.backup} $WORK_DIR
+          echo "generate the issue and pull markdown files to the hugo content and data directories from the backup files in ${instanceCfg.backup}"
+          ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${instanceCfg.backup} $WORK_DIR
 
           echo "do a hugo build of the site"
-          ${pkgs.hugo}/bin/hugo --source $WORK_DIR --debug --baseURL ${cfg.siteBaseURL}
+          ${pkgs.hugo}/bin/hugo --source $WORK_DIR --debug --baseURL ${instanceCfg.siteBaseURL}
 
-          echo "deploying to ${cfg.wwwDir}"
-          rm -rf ${cfg.wwwDir}/*
-          mv $WORK_DIR/public/* ${cfg.wwwDir}
+          echo "deploying to ${cfg.wwwDir}/${instanceName}"
+          mkdir -p ${cfg.wwwDir}/${instanceName}
+          rm -rf ${cfg.wwwDir}/${instanceName}/*
+          mv $WORK_DIR/public/* ${cfg.wwwDir}/${instanceName}
+
+          ${ optionalString instanceCfg.compressBackup ''
+            ${pkgs.gnutar}/bin/tar cf - ${instanceCfg.backup} | ${pkgs.xz}/bin/xz > $WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz
+            mv $WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz ${cfg.wwwDir}/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz
+          ''}
+
         '';
         serviceConfig = {
           User = cfg.user;
           Group = cfg.group;
           Type = "oneshot";
-          Environment = ''HUGO_TITLE="${cfg.siteName}" HUGO_PARAMS_OWNER="${cfg.owner}" HUGO_PARAMS_REPOSITORY="${cfg.repository}"  HUGO_PARAMS_FOOTER="${cfg.siteFooter}" ${if isInt cfg.goMaxProcs then ''GOMAXPROCS="${toString cfg.goMaxProcs}"'' else ""}'';
+          Environment = ''HUGO_TITLE="${instanceCfg.siteName}" HUGO_PARAMS_OWNER="${instanceCfg.owner}" HUGO_PARAMS_REPOSITORY="${instanceCfg.repository}"  HUGO_PARAMS_FOOTER="${instanceCfg.siteFooter}" ${if isInt instanceCfg.goMaxProcs then ''GOMAXPROCS="${toString instanceCfg.goMaxProcs}"'' else ""}'';
 
           # Hardening measures
           PrivateTmp = "true";
@@ -150,23 +164,6 @@ in {
         };
       }))) eachGithubMetadataMirrorInstance;
 
-    systemd.tmpfiles.rules = flatten (mapAttrsToList (instanceName: cfg:
-      [ "d '${cfg.wwwDir}' 0775 '${cfg.user}' '${cfg.group}' - -" ])
-      eachGithubMetadataMirrorInstance);
-
-    users.users = mapAttrs' (instanceName: cfg:
-      (nameValuePair "gmm-${instanceName}" {
-        name = cfg.user;
-        group = cfg.group;
-        description = "GitHub metadata mirror user ${instanceName}";
-        home = cfg.wwwDir;
-        isSystemUser = true;
-      })) eachGithubMetadataMirrorInstance;
-
-    users.groups =
-      mapAttrs' (instanceName: cfg: (nameValuePair "${cfg.group}" { }))
-      eachGithubMetadataMirrorInstance;
-
     systemd.timers = mapAttrs' (instanceName: cfg:
       (nameValuePair "github-metadata-mirror-${instanceName}" ({
         wantedBy = [ "timers.target" ];
@@ -174,6 +171,18 @@ in {
         timerConfig.OnCalendar = cfg.timerOnCalendar;
       }))) eachGithubMetadataMirrorInstance;
 
+    systemd.tmpfiles.rules = [
+      "d '${cfg.wwwDir}' 0775 '${cfg.user}' '${cfg.group}' - -"
+    ];
+
+    users.users."${cfg.user}" = {
+      name = cfg.user;
+      group = cfg.group;
+      description = "GitHub metadata mirror user";
+      home = "${cfg.wwwDir}";
+      isSystemUser = true;
+    };
+    users.groups."${cfg.group}" = {};
   };
 
 }
