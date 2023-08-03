@@ -6,8 +6,8 @@ stdenv.mkDerivation rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "github-metadata-mirror";
-    rev = "84c62327a9bd604f2872b47408b6080f71ba52c1";
-    sha256 = "sha256-D6X7oPlvGoTYfDQSK52YRmAvUihOdMwqZ7ZEmFEQY+I=";
+    rev = "915ddc155f5f59bec5fd9adb00f82aeba7b431fe";
+    sha256 = "sha256-iZM4cn0VUnvLoRyTuPNAhrNzjuEBtsrnN/mBfRuMctM=";
   };
 
   installPhase = ''
