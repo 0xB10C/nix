@@ -6,11 +6,11 @@ pkgs.rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xb10c";
     repo = "github-metadata-backup";
-    rev = "7505033e818896cd7258ef94d4f11e24b58227f9";
-    sha256 = "sha256-dkmyd3mlUkfsEdytDdo0Kzi2BN4suXPqquCke3q90gg=";
+    rev = "953158b9b432f2d60e25ef4a2bd93f943739c7b6";
+    sha256 = "sha256-l0bfeCKOl3JiaWwjVhT5J81fpBAJH/CDHFBfvCDoRvs=";
   };
 
-  cargoSha256 = "sha256-OWqL6plXL2zdHNR8w1DMMhVxUph5qeXUHLahWm2NosA=";
+  cargoSha256 = "sha256-m0x9EohDfKuWeF2dgVCKX/7wbdyPDXNHPToKcHgfagQ=";
 
   meta = {
     description = ''
