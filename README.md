@@ -1,4 +1,4 @@
-# b10c-nixpkgs
+# nix - a collection of nix packages and modules
 
 A collection of Nix modules and packages for software I've written.
 
