@@ -153,7 +153,7 @@ in {
         ];
         wantedBy = [ "github-metadata-backup-${instanceName}.target" ];
         script = ''
-          ${cfg.package}/bin/github-meta-backup \
+          ${cfg.package}/bin/github-metadata-backup \
             --owner=${cfg.owner} \
             --repo=${cfg.repository} \
             --destination=${cfg.destination} \
