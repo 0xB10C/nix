@@ -5,6 +5,7 @@
   modules = import ./modules;
   overlays = import ./overlays;
 
+  addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
   fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
   github-metadata-backup = pkgs.callPackage ./pkgs/github-metadata-backup { };
   github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
