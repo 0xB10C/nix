@@ -10,8 +10,15 @@ let
   nodeOpts = {
     options = {
       id = mkOption {
-        type = types.int;
-        description = "ID of the node as u8.";
+        type = types.ints.u16;
+        description = "ID of the node as u16.";
+        example = 1;
+      };
+
+      name = mkOption {
+        type = types.str;
+        description = "Name of the node as string. Max 32 chars.";
+        example = "alice";
       };
 
       rpc = {
@@ -47,6 +54,7 @@ let
 
     [[nodes]]
     id = ${toString node.id}
+    name = "${node.name}"
     rpc_host = "${node.rpc.host}"
     rpc_port = ${toString node.rpc.port}
     rpc_user = "${node.rpc.user}"
