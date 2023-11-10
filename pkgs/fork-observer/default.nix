@@ -7,8 +7,8 @@ rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
-    rev = "287719f49a112b48e5726a5eace89fd3b9de644e";
-    sha256 = "sha256-DwCGOyjPWz7rnB5XGCIMTRaqblcxeXbX7CtJigLE1tc=";
+    rev = "94b3e0c9efbad00ea9d145b3476c2d37d01235b9";
+    sha256 = "sha256-wjIuNn3NUhAH4PyczDCc4VS6V2mQDkIG+273ZrhmCok=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
