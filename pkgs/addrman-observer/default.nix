@@ -7,8 +7,8 @@ rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "addrman-observer";
-    rev = "76b3557ebc259f160d9d89cd70893aa2172c0185";
-    sha256 = "sha256-YyYCnA4jBExM/B79nRilbY5kMWYw3TeCo8vzokZLVbc=";
+    rev = "3af157d05eea4e71943f6cf7ef21c7e730ecd0b4";
+    sha256 = "sha256-lSiXf2ehXN3NT4FSB/cPIjqSkseokpCrIy7FUMEk4F4=";
   };
 
   sourceRoot = "source/proxy";
