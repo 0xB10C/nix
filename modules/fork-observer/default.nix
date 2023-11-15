@@ -173,6 +173,13 @@ in {
         description = "Address the web-server listens on";
       };
 
+      rss_base_url = mkOption {
+        type = types.str;
+        default = null;
+        example = "https://fork-obserser.example.com";
+        description = "Base URL of the RSS server. Needed for RSS-spec valid RSS feeds.";
+      };
+
       networks = mkOption {
         type = types.listOf (types.submodule networkOpts);
         default = [ ];
@@ -228,6 +235,7 @@ in {
         www_path = "${cfg.package}/www"
         query_interval = ${toString cfg.queryInterval}
         address = "${cfg.address}"
+        rss_base_url = "${cfg.rss_base_url}"
         footer_html = """
         ${cfg.footer}
         """
