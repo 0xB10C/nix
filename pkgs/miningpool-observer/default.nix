@@ -6,8 +6,8 @@ pkgs.rustPlatform.buildRustPackage rec {
   src = fetchFromGitHub {
     owner = "0xB10C";
     repo = "miningpool-observer";
-    rev = "830e8234bf996e3cdc10011584d7bcf282f28d69";
-    sha256 = "sha256-Qct2+uniEGlHcdU2mIZjYqv5mhNmzZHyb/OAdU6xjPE=";
+    rev = "d82aa2ca30584660ee77f20d5eeac5acd1781de8";
+    sha256 = "sha256-zFKCrqkPid5GNx1gkZdGKF7D+yHQiGTFilTv/SSdN6k=";
   };
 
   buildInputs = [ pkgs.postgresql ];
@@ -15,7 +15,7 @@ pkgs.rustPlatform.buildRustPackage rec {
   cargoLock = {
     lockFile = ./Cargo.lock;
     outputHashes = {
-      "bitcoincore-rpc-0.17.0" = "sha256-EPXrqAgme9iXzFRqTAhOlAy6JtzXY9o+MuTWhhqW+oI=";
+      "bitcoincore-rpc-0.18.0" = "sha256-ZQGfcrSqRi697QO2WwpvKw25k5gva1M7/4W0OJoyNlg=";
     };
   };
 
