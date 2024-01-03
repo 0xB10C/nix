@@ -46,6 +46,19 @@ let
           "Specification of one or more networks with nodes to connect to.";
       };
 
+      poolIdentification = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Enables the pool identification for this network";
+        };
+
+        network = mkOption {
+          type = types.enum ["Mainnet" "Testnet" "Signet" ];
+          default = "Mainnet";
+          description = "Bitcoin Network used for the mining pool identification";
+        };
+      };
     };
   };
 
@@ -56,6 +69,9 @@ let
     description = "${network.description}"
     min_fork_height = ${toString network.minForkHeight}
     max_interesting_heights = ${toString network.maxInterestingHeights}
+    [networks.pool_identification]
+      enable = ${boolToString network.poolIdentification.enable}
+      network = "${toString network.poolIdentification.network}"
 
     ${concatMapStrings makeNodeConfig network.nodes}
   '';

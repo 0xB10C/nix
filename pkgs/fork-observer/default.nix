@@ -7,13 +7,13 @@ rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
-    rev = "bb39577ee38156faf79f43c9a310ebfd8e662e14";
-    sha256 = "sha256-/u2g4MB4Uw4QDNncqUz/ierX/fY1b159cXBW0NBWQHE=";
+    rev = "010d0b97b964b371ebfc221c2e88f32b44f23826";
+    sha256 = "sha256-WHWSDsQr+e27JGvy0ez/7WJxcpgnWPiB0a5G962YXJg=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
 
-  cargoSha256 = "sha256-TOIEdqgWmdy947Ox0UmAbrEM27xddGVLbmZuaHE6Njo=";
+  cargoSha256 = "sha256-Mwx3kso0yS8kLZ9h6CX7sZKKLRQV0Qi1dF2LXKsvitY=";
 
   postInstall = ''
     cp -r www $out/www
