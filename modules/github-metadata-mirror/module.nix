@@ -136,7 +136,7 @@ in {
           ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${instanceCfg.backup} $WORK_DIR
 
           echo "do a hugo build of the site"
-          ${pkgs.hugo}/bin/hugo --source $WORK_DIR --debug --baseURL ${instanceCfg.siteBaseURL}
+          ${pkgs.hugo}/bin/hugo --source $WORK_DIR --logLevel debug --baseURL ${instanceCfg.siteBaseURL}
 
           echo "deploying to ${cfg.wwwDir}/${instanceName}"
           mkdir -p ${cfg.wwwDir}/${instanceName}
