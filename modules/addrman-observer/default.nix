@@ -70,7 +70,7 @@ in {
       package = mkOption {
         type = types.package;
         default = pkg;
-        description = "The addrman-observer-prox package to use.";
+        description = "The addrman-observer-proxy package to use.";
       };
 
       address = mkOption {
