@@ -5,4 +5,5 @@
   github-metadata-backup = ./github-metadata-backup;
   github-metadata-mirror = ./github-metadata-mirror;
   peer-observer = ./peer-observer;
+  stratum-observer = ./stratum-observer;
 }
