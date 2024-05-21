@@ -6,8 +6,8 @@ rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "peer-observer";
-    rev = "81f2a1078fd8e3131618c67e6529fb3fcbc41502";
-    sha256 = "sha256-FekUAqOltWGL+06E54NPlklvmafexhMbg6YZIpSzO8Q=";
+    rev = "d2df9d09727103412359d86ebb9237f18676c7b6";
+    sha256 = "sha256-sbMcABImAVK6gNGQDTAfoTejPgXLt1eRGs/edVI2WEM=";
   };
 
   hardeningDisable = [
