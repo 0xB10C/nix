@@ -1,10 +1,6 @@
 { pkgs ? import <nixpkgs> { } }:
 
 {
-  lib = import ./lib { inherit pkgs; };
-  modules = import ./modules;
-  overlays = import ./overlays;
-
   addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
   ckpool = pkgs.callPackage ./pkgs/ckpool { };
   fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
