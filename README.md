@@ -18,3 +18,7 @@ $ nix-update miningpool-observer --flake --version=skip
 ```
 
 [`nix-update`]: https://github.com/Mic92/nix-update
+
+## Integration tests
+
+The integration tests can be run with `nix flake check`. Passing `--print-build-logs` helps debugging on failures.
