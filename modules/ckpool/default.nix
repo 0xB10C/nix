@@ -25,16 +25,24 @@ in {
         description = "Address the pool listens on";
       };
 
+      iam_not_using_this_to_mine = mkOption {
+        type = types.bool;
+        default = false;
+        description =
+          "This ckpool module is not intended to be used for real mining. This is a reminder.";
+      };
+
       coinbaseTag = mkOption {
         type = types.str;
         default = "/mined by ck/";
         description = "Coinbase tag";
       };
 
-      iam_not_using_this_to_mine = mkOption {
-        type = types.bool;
-        default = false;
-        description = "This ckpool module is not intended to be used for real mining. This is a reminder.";
+      coinbaseAddress = mkOption {
+        type = types.str;
+        default = "1BitcoinEaterAddressDontSendf59kuE";
+        description =
+          "Ckpool needs an address to construct a coinbase transaction. Defaults to a mainnet address, can be configured to a testnet or regtest address if needed.";
       };
 
       rpc = {
@@ -66,11 +74,12 @@ in {
           description = lib.mdDoc "The Bitcoin Core RPC username to use.";
         };
       };
-      
+
       zmqblock = mkOption {
         type = types.str;
         default = "tcp://127.0.0.1:28332";
-        description = lib.mdDoc "The endpoint of the Bitcoin Core ZMQ interface for new blocks.";
+        description = lib.mdDoc
+          "The endpoint of the Bitcoin Core ZMQ interface for new blocks.";
       };
 
     };
@@ -78,9 +87,10 @@ in {
 
   config = mkIf cfg.enable {
 
-    assertions = [{ 
+    assertions = [{
       assertion = cfg.iam_not_using_this_to_mine;
-      message = "This ckpool module is not intended to be used for mining coins with real value. Set `iam_not_using_this_to_mine` to true.";
+      message =
+        "This ckpool module is not intended to be used for mining coins with real value. Set `iam_not_using_this_to_mine` to true.";
     }];
 
     users = {
@@ -113,7 +123,7 @@ in {
           	}
           ],
           "upstream" : "",
-          "btcaddress" : "1BitcoinEaterAddressDontSendf59kuE",
+          "btcaddress" : "${cfg.coinbaseAddress}",
           "btcsig" : "${cfg.coinbaseTag}",
           "blockpoll" : 100,
           "donation" : 0.0,
@@ -137,7 +147,8 @@ in {
         EOF'';
 
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/ckpool --killold --config /etc/ckpool/ckpool.conf";
+        ExecStart =
+          "${cfg.package}/bin/ckpool --killold --config /etc/ckpool/ckpool.conf --solobtc";
         Restart = "always";
         # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
         RestartSec = 30;
