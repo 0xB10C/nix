@@ -8,3 +8,7 @@ A collection of Nix modules and packages for software I've written.
 -->
 [![Cachix Cache](https://img.shields.io/badge/cachix-b10c-nixpkgs-blue.svg)](https://b10c-nixpkgs.cachix.org)
 
+
+## Integration tests
+
+The integration tests can be run with `nix flake check`. Passing `--print-build-logs` helps debugging on failures.
