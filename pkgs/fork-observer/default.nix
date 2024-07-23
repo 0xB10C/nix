@@ -3,11 +3,12 @@
 rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
+  version = "104f51f918e4c3a0ad2ec1a3dc83856eef386019";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
-    rev = "104f51f918e4c3a0ad2ec1a3dc83856eef386019";
+    rev = version;
     sha256 = "sha256-0KeiOUVTL8zIYKdW+1yU0fWZfgSBoFh88yYOXz/Y7jE=";
   };
 
