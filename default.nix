@@ -14,4 +14,6 @@
   stratum-observer = pkgs.callPackage ./pkgs/stratum-observer { };
   miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
   peer-observer = pkgs.callPackage ./pkgs/peer-observer { };
+  transactionfee-info-backend = (pkgs.callPackage ./pkgs/transactionfee-info { }).backend;
+  transactionfee-info-frontend = (pkgs.callPackage ./pkgs/transactionfee-info { }).frontend;
 }
