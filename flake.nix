@@ -38,6 +38,12 @@
           ];
           hostPkgs = import nixpkgs { inherit system; };
         };
+        transactionfee-info = nixos-lib.runTest {
+          imports = [ 
+            ./tests/transactionfee-info.nix 
+          ];
+          hostPkgs = import nixpkgs { inherit system; };
+        };
       });
       
     };
