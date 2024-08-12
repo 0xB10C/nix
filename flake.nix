@@ -32,6 +32,12 @@
           ];
           hostPkgs = import nixpkgs { inherit system; };
         };
+        peer-observer = nixos-lib.runTest {
+          imports = [ 
+            ./tests/peer-observer.nix 
+          ];
+          hostPkgs = import nixpkgs { inherit system; };
+        };
       });
       
     };
