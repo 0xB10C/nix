@@ -11,7 +11,6 @@ in {
   options = {
 
     services.peer-observer = {
-      enable = mkEnableOption "peer-observer";
 
       package = mkOption {
         type = types.package;
@@ -20,39 +19,54 @@ in {
         description = ''The peer-observer package to use.'';
       };
 
-      metrics_address = mkOption {
-        type = types.str;
-        default = "127.0.0.1:8282";
-        example = "127.0.0.1:8282";
-        description = "Address the metrics webserver should listen on.";
-      };
-
-      bitcoind_path = mkOption {
-        type = types.str;
-        default = null;
-        description = "Path to the bitcoind executable.";
-      };
-
-      addrConnectivityLookup = {
-        enable = mkEnableOption "addr connectivity lookup";
-
-        metrics_address = {
-          host = mkOption {
-            type = types.str;
-            default = "127.0.0.1";
-            description = "Host the addrConnectivtyLookup metrics webserver should listen on.";
-          };
-
-          port = mkOption {
-            type = types.port;
-            default = 32847;
-            description = "Port the addrConnectivtyLookup metrics webserver should listen on.";
-          };
+      extractor = {
+        enable = mkEnableOption "peer-observer extractor";
+        eventsAddress = mkOption {
+          type = types.str;
+          default = "tcp://127.0.0.1:8883";
+          example = "tcp://127.0.0.1:8883";
+          description = "Address the extractor publishes events on";
+        };
+        
+        bitcoindPath = mkOption {
+          type = types.str;
+          default = null;
+          description = "Path to the bitcoind executable.";
+        };
+        
+        extraArgs= mkOption {
+          type = types.str;
+          default = "";
+          example = "--no-connection-tracepoints --addrman-tracepoints";
+          description = "Extra arguments to pass to the peer-observer extractor.";
         };
       };
+
+      metrics = {
+        enable = mkEnableOption "prometheus metrics";
+        
+        metricsAddress = mkOption {
+          type = types.str;
+          default = "127.0.0.1:8282";
+          example = "127.0.0.1:8282";
+          description = "Address the metrics webserver should listen on.";
+        };
+      };
+      
+      addrConnectivity = {
+        enable = mkEnableOption "addr connectivity lookup";
+
+        metricsAddress = mkOption {
+          type = types.str;
+          default = "127.0.0.1:8282";
+          example = "127.0.0.1:8282";
+          description = "Address the metrics webserver should listen on.";
+        };
+      };
+      
     };
   };
-  config = mkIf cfg.enable {
+  config = mkIf (cfg.extractor.enable || cfg.metrics.enable || cfg.addrConnectivity.enable) {
     users = {
       users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
       groups.peerobserver = { };
@@ -62,7 +76,7 @@ in {
       "d '/var/lib/peer-observer/' 0770 'peerobserver' 'peerobserver' - -"
     ];
 
-    systemd.services.peer-observer-extractor = {
+    systemd.services.peer-observer-extractor = mkIf cfg.extractor.enable {
       description = "peer observer";
       wantedBy = [ "multi-user.target" ];
       after = ["network-online.target" ];
@@ -70,7 +84,7 @@ in {
       startLimitIntervalSec = 120;
       serviceConfig =
         {
-          ExecStart = "${cfg.package}/bin/extractor ${cfg.bitcoind_path}";
+          ExecStart = "${cfg.package}/bin/extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --address ${cfg.extractor.eventsAddress} ${cfg.extractor.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -94,14 +108,14 @@ in {
         };
       };
 
-      systemd.services.peer-observer-metrics = {
+      systemd.services.peer-observer-metrics = mkIf cfg.metrics.enable {
         description = "peer-observer metrics";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" "peer-observer-processor.service" ];
-        wants = ["network-online.target" "peer-observer-processor.service" ];
+        after = ["network-online.target" "peer-observer-extractor.service" ];
+        wants = ["network-online.target" "peer-observer-extractor.service" ];
         startLimitIntervalSec = 120;
         serviceConfig = {
-          ExecStart = "${cfg.package}/bin/metrics ${cfg.metrics_address}";
+          ExecStart = "${cfg.package}/bin/metrics --address ${cfg.extractor.eventsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -117,14 +131,14 @@ in {
         };
       };
 
-      systemd.services.peer-observer-addr-connectivity-check = mkIf cfg.addrConnectivityLookup.enable {
+      systemd.services.peer-observer-addr-connectivity-check = mkIf cfg.addrConnectivity.enable {
         description = "peer-observer addr-connectivity-check";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" "peer-observer-processor.service" ];
-        wants = ["network-online.target" "peer-observer-processor.service" ];
+        after = ["network-online.target" "peer-observer-extractor.service" ];
+        wants = ["network-online.target" "peer-observer-extractor.service" ];
         startLimitIntervalSec = 120;
         serviceConfig = {
-          ExecStart = "${cfg.package}/bin/connectivity-check ${cfg.addrConnectivityLookup.metrics_address.host}:${toString cfg.addrConnectivityLookup.metrics_address.port}";
+          ExecStart = "${cfg.package}/bin/connectivity-check --address ${cfg.extractor.eventsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
