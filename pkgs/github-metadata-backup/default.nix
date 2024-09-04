@@ -11,7 +11,7 @@ pkgs.rustPlatform.buildRustPackage rec {
     sha256 = "sha256-ftLevWbKEZ7WMnIdBQTFHVR+mogY4xVkis5bFJ68+XQ=";
   };
 
-  cargoSha256 = "sha256-AIoEmsxADUDfnleJfzFxCsejh4ptbId8zlaEsrwN/Wg=";
+  cargoHash = "sha256-AIoEmsxADUDfnleJfzFxCsejh4ptbId8zlaEsrwN/Wg=";
 
   meta = {
     description = ''

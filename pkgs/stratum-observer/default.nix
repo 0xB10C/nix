@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage rec {
 
   nativeBuildInputs = [ postgresql ];
   
-  cargoSha256 = "sha256-cH7oMXCrB4uqLZNDM7vf4xIf4IpkZQK4zBgrcf6dQ0s=";
+  cargoHash = "sha256-cH7oMXCrB4uqLZNDM7vf4xIf4IpkZQK4zBgrcf6dQ0s=";
 
   postInstall = ''
     cp -r www $out/www
