@@ -26,7 +26,7 @@ in
 
     buildInputs = with pkgs; [ sqlite ];
 
-    cargoSha256 = "sha256-ZGV6s8sv+UwWdzB20upHMZRPVS3CPgefwMgpZVfhK40=";
+    cargoHash = "sha256-ZGV6s8sv+UwWdzB20upHMZRPVS3CPgefwMgpZVfhK40=";
 
     meta = {
       description = "backend of transactionfee-info";
