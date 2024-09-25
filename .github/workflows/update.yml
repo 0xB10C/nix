@@ -1,0 +1,15 @@
+name: "Update packages ❄️"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "26 6 * * *" # https://crontab.guru/#26_10_*_*_*
+jobs:
+  updateFlakePackages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@V28
+      - name: Update flake packages
+        uses: selfuryon/nix-update-action@v1.0.1
