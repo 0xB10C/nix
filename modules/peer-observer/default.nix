@@ -64,6 +64,17 @@ in {
         };
       };
       
+      websocket = {
+        enable = mkEnableOption "websocket tool";
+
+        websocketAddress = mkOption {
+          type = types.str;
+          default = "127.0.0.1:8282";
+          example = "127.0.0.1:8282";
+          description = "Address the websocket server should listen on.";
+        };
+      };
+      
     };
   };
   config = mkIf (cfg.extractor.enable || cfg.metrics.enable || cfg.addrConnectivity.enable) {
@@ -150,6 +161,27 @@ in {
           WorkingDirectory = "/var/lib/peer-observer";
           ReadWriteDirectories = "/var/lib/peer-observer";
           ConfigurationDirectoryMode = 710;
+          DynamicUser = true;
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+      
+      systemd.services.peer-observer-websocket = mkIf cfg.websocket.enable {
+        description = "peer-observer websocket";
+        wantedBy = [ "multi-user.target" ];
+        after = ["network-online.target" "peer-observer-extractor.service" ];
+        wants = ["network-online.target" "peer-observer-extractor.service" ];
+        startLimitIntervalSec = 120;
+        serviceConfig = {
+          ExecStart = "${cfg.package}/bin/websocket --address ${cfg.extractor.eventsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
+          Environment = "RUST_LOG=info";
+          Restart = "always";
+          # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          MemoryDenyWriteExecute = true;
           DynamicUser = true;
           User = "peerobserver";
           Group = "peerobserver";
