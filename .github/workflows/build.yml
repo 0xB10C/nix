@@ -12,15 +12,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Set this to notify the global nur package registry that changes are
-        # available.
-        #
-        # The repo name as used in
-        # https://github.com/nix-community/NUR/blob/master/repos.json
-        # nurRepo:
-        #  - <YOUR_REPO_NAME>
-        cachixName:
-          - b10c-nixpkgs
         nixPath:
           - nixpkgs=channel:nixos-unstable
           - nixpkgs=channel:nixos-24.05
@@ -40,9 +31,8 @@ jobs:
       run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
     - name: Setup cachix
       uses: cachix/cachix-action@v15
-      if: ${{ matrix.cachixName != '<YOUR_CACHIX_NAME>' }}
       with:
-        name: ${{ matrix.cachixName }}
+        name: b10c-nixpkgs
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: Check evaluation
@@ -58,6 +48,3 @@ jobs:
       run: nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs
     - name: Run integration test
       run: nix flake check --print-build-logs
-    - name: Trigger NUR update
-      if: ${{ matrix.nurRepo != '<YOUR_REPO_NAME>' }}
-      run: curl -XPOST "https://nur-update.nix-community.org/update?repo=${{ matrix.nurRepo }}"
