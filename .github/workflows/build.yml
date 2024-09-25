@@ -45,6 +45,6 @@ jobs:
           -I nixpkgs=$(nix-instantiate --find-file nixpkgs) \
           -I $PWD
     - name: Build nix packages
-      run: nix shell -f '<nixpkgs>' nix-build-uncached -c nix-build-uncached ci.nix -A cacheOutputs
-    - name: Run integration test
-      run: nix flake check --print-build-logs
+      run: nix-build --max-jobs 1
+    - name: Run NixOS module integration tests
+      run: nix flake check --print-build-logs --max-jobs 1
