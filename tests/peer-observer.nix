@@ -5,6 +5,7 @@ let
   PEER_OBSERVER_METRICS_PORT = 10090;
   PEER_OBSERVER_ADDR_CHECK_METRICS_PORT = 10080;
   PEER_OBSERVER_EXTRACTOR_PORT = 10070;
+  PEER_OBSERVER_WEBSOCKET_PORT = 10060;
   BITCOIND_PORT = 12345;
 
 in {
@@ -48,6 +49,12 @@ in {
         enable = true;
         metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}";
       };
+      
+      websocket = {
+        enable = true;
+        websocketAddress = "127.0.0.1:${toString PEER_OBSERVER_WEBSOCKET_PORT}";
+      };
+      
     };
   };
 
@@ -55,6 +62,7 @@ in {
     # HACK: don't start these from the beginning
     # needs https://github.com/0xB10C/peer-observer/issues/37
     machine.systemctl("stop peer-observer-metrics.service")
+    machine.systemctl("stop peer-observer-websocket.service")
     machine.systemctl("stop peer-observer-addr-connectivity-check.service")
   
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
@@ -79,5 +87,8 @@ in {
     metrics2 = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}/metrics")
     assert len(metrics2) == 0
 
+    machine.systemctl("start peer-observer-websocket.service")
+    machine.wait_for_unit("peer-observer-websocket.service", timeout=15)
+    machine.wait_for_open_port(${toString PEER_OBSERVER_WEBSOCKET_PORT})
   '';
 }
