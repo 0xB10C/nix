@@ -2,13 +2,13 @@
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
-  version = "712a51c4d435ba91cc9fd404965eb507ef7edd56";
+  version = "2f550d8328ce26309209bca09c930a30bc55cec5";
   
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-65rcbShcxBLPq/cmcxrBdasgzIyh/llFtide88ai/pY=";
+    sha256 = "sha256-InSOXqHxqSFGL7o1q9JFM7UFSIpVrfxWCFo+GJXrmF0=";
   };
 
   hardeningDisable = [
@@ -34,7 +34,7 @@ rustPlatform.buildRustPackage rec {
     pkgs.rustfmt
   ];
 
-  cargoHash = "sha256-XEwucyLAHFUL0EbVz/VHzNBChXuAP3KEbu+qbbfP1sc=";
+  cargoHash = "sha256-YwM9CSvq5bj10aebmVf2g+xeS9AVcMog+PsvQM5yMR8=";
 
   meta = with stdenv.lib; {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
