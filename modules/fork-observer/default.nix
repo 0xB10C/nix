@@ -174,7 +174,7 @@ in {
         type = types.str;
         default = "db";
         example = "db";
-        description = "Name of the sled database folder.";
+        description = "Name of the sqlite database.";
       };
 
       queryInterval = mkOption {

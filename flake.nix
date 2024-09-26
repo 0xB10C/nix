@@ -44,6 +44,12 @@
           ];
           hostPkgs = import nixpkgs { inherit system; };
         };
+        fork-observer = nixos-lib.runTest {
+          imports = [ 
+            ./tests/fork-observer.nix 
+          ];
+          hostPkgs = import nixpkgs { inherit system; };
+        };
       });
       
     };
