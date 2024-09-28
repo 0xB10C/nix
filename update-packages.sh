@@ -13,5 +13,6 @@ declare -a pkgs=(
 for i in "${pkgs[@]}"
 do
   echo "updating $i"
-  nix-shell -p nix-update --run "nix-update --flake --version=branch $i"
+  nix-shell -p nix-update --run "nix-update --flake --commit --version=branch $i"
+  git log -1
 done
