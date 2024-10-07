@@ -42,5 +42,6 @@ rustPlatform.buildRustPackage rec {
 
   postInstall = ''
     cp -r $src/tools/metrics/dashboards $out
+    cp -r $src/tools/websocket/www $out/websocket-www
   '';
 }
