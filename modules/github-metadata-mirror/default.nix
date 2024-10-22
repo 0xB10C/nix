@@ -114,6 +114,7 @@ in {
       (nameValuePair "github-metadata-mirror-${instanceName}" ({
         description = "GitHub Metadata Mirror ${instanceName}";
         after = [ "network-online.target" ];
+        requires = [ "network-online.target" ];
         script = ''
           set -e
 
