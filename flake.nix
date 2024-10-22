@@ -1,8 +1,9 @@
 {
   description = "My personal NUR repository";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/24.05";
-  
-  outputs = { self, nixpkgs, ... }:
+
+  outputs =
+    { self, nixpkgs, ... }:
     let
       systems = [
         "x86_64-linux"
@@ -14,49 +15,30 @@
       ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
       nixos-lib = import (nixpkgs + "/nixos/lib") { };
+      mkTest =
+        imports: system:
+        nixos-lib.runTest {
+          inherit imports;
+          hostPkgs = import nixpkgs { inherit system; };
+        };
     in
     {
-    
-      packages = forAllSystems (system: import ./default.nix {
-          pkgs = import nixpkgs { inherit system; };
-      });
-      
+
+      packages = forAllSystems (
+        system: import ./default.nix { pkgs = import nixpkgs { inherit system; }; }
+      );
+
       nixosModules = {
         default = import ./modules;
       };
-      
+
       checks = forAllSystems (system: {
-        stratum-observer = nixos-lib.runTest {
-          imports = [ 
-            ./tests/stratum-observer.nix 
-          ];
-          hostPkgs = import nixpkgs { inherit system; };
-        };
-        peer-observer = nixos-lib.runTest {
-          imports = [ 
-            ./tests/peer-observer.nix 
-          ];
-          hostPkgs = import nixpkgs { inherit system; };
-        };
-        transactionfee-info = nixos-lib.runTest {
-          imports = [ 
-            ./tests/transactionfee-info.nix 
-          ];
-          hostPkgs = import nixpkgs { inherit system; };
-        };
-        fork-observer = nixos-lib.runTest {
-          imports = [ 
-            ./tests/fork-observer.nix 
-          ];
-          hostPkgs = import nixpkgs { inherit system; };
-        };
-        miningpool-observer = nixos-lib.runTest {
-          imports = [ 
-            ./tests/miningpool-observer.nix 
-          ];
-          hostPkgs = import nixpkgs { inherit system; };
-        };
+        stratum-observer = mkTest [ ./tests/stratum-observer.nix ] system;
+        peer-observer = mkTest [ ./tests/peer-observer.nix ] system;
+        transactionfee-info = mkTest [ ./tests/transactionfee-info.nix ] system;
+        fork-observer = mkTest [ ./tests/fork-observer.nix ] system;
+        miningpool-observer = mkTest [ ./tests/miningpool-observer.nix ] system;
       });
-      
+
     };
 }
