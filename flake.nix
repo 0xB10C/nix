@@ -50,6 +50,12 @@
           ];
           hostPkgs = import nixpkgs { inherit system; };
         };
+        miningpool-observer = nixos-lib.runTest {
+          imports = [ 
+            ./tests/miningpool-observer.nix 
+          ];
+          hostPkgs = import nixpkgs { inherit system; };
+        };
       });
       
     };

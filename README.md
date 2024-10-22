@@ -21,4 +21,7 @@ $ nix-update miningpool-observer --flake --version=skip
 
 ## Integration tests
 
-The integration tests can be run with `nix flake check`. Passing `--print-build-logs` helps debugging on failures.
+The integration tests can be run with `nix flake check`.
+A single test, for example for `miningpool-observer`, can be run with
+`nix build .#checks.x86_64-linux.miningpool-observer` on `x86_64-linux`.
+Passing `--print-build-logs` helps debugging on failures.
