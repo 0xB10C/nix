@@ -151,6 +151,7 @@ in {
           "network-online.target"
           "github-metadata-backup-${instanceName}.target"
         ];
+        requires = [ "network-online.target" ];
         wantedBy = [ "github-metadata-backup-${instanceName}.target" ];
         script = ''
           ${cfg.package}/bin/github-metadata-backup \
@@ -193,6 +194,7 @@ in {
           "github-metadata-backup-${instanceName}.target"
           "github-metadata-backup-${instanceName}.service"
         ];
+        requires = [ "network-online.target" ];
         wantedBy = [ "github-metadata-backup-${instanceName}.target" ];
 
         script = ''
