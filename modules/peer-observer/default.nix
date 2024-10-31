@@ -114,8 +114,8 @@ in {
             "clone3"
             "@debug"
           ];
-          User = "root";
-          Group = "root";
+          User = "peerobserver";
+          Group = "peerobserver";
         };
       };
 
