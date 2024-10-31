@@ -2,7 +2,7 @@
 
 pkgs.rustPlatform.buildRustPackage rec {
   name = "miningpool-observer";
-  version = "e21ca2c0556b96e07274ef334ee99c38b94c2854";
+  version = "3b4be5fe3d767e53238a1ca34f9417b40c55edcf";
 
   src = fetchFromGitHub {
     owner = "0xB10C";
