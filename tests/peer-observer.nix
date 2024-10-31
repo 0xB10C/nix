@@ -22,7 +22,7 @@ in {
 
     services.bitcoind."regtest" = {
       enable = true;
-      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v27; # might needs to be updated from time to time
+      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v28; # might needs to be updated from time to time
       port = 12345;
       extraConfig = ''
         regtest=1
