@@ -2,6 +2,7 @@
 
 {
   addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
+  asmap-data = pkgs.callPackage ./pkgs/asmap-data { };
   bitcoind-tracing-v23 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v23.2"; };
   bitcoind-tracing-v24 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v24.2"; };
   bitcoind-tracing-v25 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v25.2"; };
