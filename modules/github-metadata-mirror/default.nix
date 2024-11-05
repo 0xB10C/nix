@@ -134,7 +134,7 @@ in {
           cp --recursive --no-preserve=ownership,mode ${cfg.package}/* $WORK_DIR
 
           echo "generate the issue and pull markdown files to the hugo content and data directories from the backup files in ${instanceCfg.backup}"
-          ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${instanceCfg.backup} $WORK_DIR
+          ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${instanceCfg.backup} $WORK_DIR ${instanceCfg.owner}/${instanceCfg.repository}
 
           echo "do a hugo build of the site"
           ${pkgs.hugo}/bin/hugo --source $WORK_DIR --logLevel debug --baseURL ${instanceCfg.siteBaseURL}
