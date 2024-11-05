@@ -64,7 +64,7 @@ jobs:
               PR=$(gh pr list --head $BRANCH --json number -q '.[0].number')
               if [ -z $PR ]; then
                 PR_TITLE="Automated package update of $i ($(date -Idate))" 
-                gh pr create --head $BRANCH --title="$PR_TITLE" --reviewer 0xb10c --fill
+                gh pr create --head $BRANCH --title="$PR_TITLE" --body="Auto updating package '$i'. See commit(s) for details." --reviewer 0xb10c
               else
                 echo "Pull request already exists, won't create a new one."
               fi
