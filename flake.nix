@@ -33,6 +33,7 @@
       };
 
       checks = forAllSystems (system: {
+        asmap-data = mkTest [ ./tests/asmap-data.nix ] system;
         stratum-observer = mkTest [ ./tests/stratum-observer.nix ] system;
         peer-observer = mkTest [ ./tests/peer-observer.nix ] system;
         transactionfee-info = mkTest [ ./tests/transactionfee-info.nix ] system;
