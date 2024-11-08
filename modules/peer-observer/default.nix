@@ -34,6 +34,19 @@ in {
           description = "Path to the bitcoind executable.";
         };
         
+        bitcoindPIDFile = mkOption {
+          type = types.str;
+          default = null;
+          description = "The path to the bitcoind PID file. This file is read by systemd during extractor startup.";
+        };
+
+        dependsOn = mkOption {
+          type = types.str;
+          default = null;
+          example = "bitcoind-mainnet";
+          description = "The bitcoind-*.service peer-observer depends on. i.e. the bitcoind process which should be traced. This is always 'bitcoind-<name>', where <name> is the name of the NixOS bitcoind service.";
+        };
+        
         extraArgs= mkOption {
           type = types.str;
           default = "";
@@ -87,15 +100,29 @@ in {
       "d '/var/lib/peer-observer/' 0770 'peerobserver' 'peerobserver' - -"
     ];
 
+    # before we can start the peer-observer, wait until the PID file has been created by bitcoind
+    # in the RuntimeDirectory
+    systemd.services."${cfg.extractor.dependsOn}".serviceConfig = {
+      RuntimeDirectory = "${cfg.extractor.dependsOn}";
+      ExecStartPost = ''
+        ${pkgs.bash}/bin/bash -c ' \
+        while ! stat ${cfg.extractor.bitcoindPIDFile} 2>/dev/null; do \
+          echo \"Waiting for bitcoind PID file...\"; \
+          sleep 1; \
+        done; \
+        chmod +r ${cfg.extractor.bitcoindPIDFile}'
+      '';
+    };
+
     systemd.services.peer-observer-extractor = mkIf cfg.extractor.enable {
       description = "peer observer";
       wantedBy = [ "multi-user.target" ];
-      after = ["network-online.target" ];
-      wants = ["network-online.target" ];
+      after = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
+      wants = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
       startLimitIntervalSec = 120;
       serviceConfig =
         {
-          ExecStart = "${cfg.package}/bin/extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --address ${cfg.extractor.eventsAddress} ${cfg.extractor.extraArgs}";
+          ExecStart = "${cfg.package}/bin/extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --bitcoind-pid-file ${cfg.extractor.bitcoindPIDFile} --libbpf-debug --address ${cfg.extractor.eventsAddress} ${cfg.extractor.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
