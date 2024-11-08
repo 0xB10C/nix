@@ -24,6 +24,8 @@ in {
       enable = true;
       package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v28; # might needs to be updated from time to time
       port = 12345;
+      # needs to be "/run/bitcoind-<name>/bitcoind.pid"
+      pidFile = "/run/bitcoind-regtest/bitcoind.pid";
       extraConfig = ''
         regtest=1
         debug=net
@@ -32,8 +34,10 @@ in {
     
     services.peer-observer = {
       extractor = {
+        dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
         enable = true;
         bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
+        bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
         eventsAddress = "tcp://127.0.0.1:${toString PEER_OBSERVER_EXTRACTOR_PORT}";
         # can be removed once https://github.com/bitcoin/bitcoin/pull/25832 is merged
         # and included in a release
