@@ -43,7 +43,7 @@ in
     sourceRoot = "source/frontend";
 
     buildPhase = ''
-      ${pkgs.hugo}/bin/hugo --buildFuture --buildExpired --minify --logLevel=debug --printMemoryUsage --printPathWarnings --printUnusedTemplates --verbose
+      ${pkgs.hugo}/bin/hugo --buildFuture --buildExpired --minify --logLevel=debug --printMemoryUsage --printPathWarnings --printUnusedTemplates
     '';
 
     installPhase = ''
