@@ -2,13 +2,13 @@
 
 pkgs.rustPlatform.buildRustPackage rec {
   name = "miningpool-observer";
-  version = "261d426e0fed7f81586382a098e5a2d9da876a73";
+  version = "6e8e3c95ae62d1778603e0c825f573ae8c4d2013";
 
   src = fetchFromGitHub {
     owner = "0xB10C";
     repo = "miningpool-observer";
     rev = version;
-    sha256 = "sha256-yUg+6pHWMvAdafGfZBhL/PPrQcd1jWU5iF0CTN2KVws=";
+    sha256 = "sha256-pf/pDHV2FTjQAMz5BuVe+bg+Pl6punj3DLlfzgfa/F0=";
   };
 
   buildInputs = [ pkgs.postgresql ];
