@@ -62,6 +62,26 @@ in {
               useREST = true;
               implementation = "BitcoinCore";
             }
+            {
+              id = 568;
+              name = "esplora";
+              description = "This is using the esplora backend";
+              rpcPort = BITCOIND_RPC_PORT;
+              rpcHost = "https://esplora.example.com/api";
+              useREST = true;
+              implementation = "esplora";
+            }
+            {
+              id = 569;
+              name = "btcd";
+              description = "This is a btcd node.";
+              rpcPort = 12345;
+              rpcHost = "127.0.0.1";
+              rpcUser = "fork-observer";
+              rpcPassword = "hunter2";
+              useREST = false;
+              implementation = "btcd";
+            }
           ];
         }
       ];
@@ -109,7 +129,7 @@ in {
     print("data.json response:", data)
     d = json.loads(data)
 
-    assert len(d["nodes"]) == 1
+    assert len(d["nodes"]) == 3
     node = d["nodes"][0]
     assert node["id"] == 567
     assert node["name"] == "Node 567"
