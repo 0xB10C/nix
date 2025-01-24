@@ -108,13 +108,13 @@ let
       };
 
       rpcUser = mkOption {
-        type = types.str;
+        type = types.nullOr types.str;
         default = null;
         description = "Bitcoin Core RPC server user";
       };
 
       rpcPassword = mkOption {
-        type = types.str;
+        type = types.nullOr types.str;
         default = null;
         description = "Bitcoin Core RPC server password";
       };
@@ -134,7 +134,7 @@ let
       };
 
       implementation = mkOption {
-        type = types.enum [ "BitcoinCore" "btcd" ];
+        type = types.enum [ "BitcoinCore" "btcd" "esplora" ];
         default = "BitcoinCore";
         description = "The Bitcoin implementation to query";
       };
@@ -151,8 +151,8 @@ let
     # TODO: rpc_cookie_file = "~/.bitcoin/.cookie"
     rpc_host = "${node.rpcHost}"
     rpc_port = ${toString node.rpcPort}
-    rpc_user = "${node.rpcUser}"
-    rpc_password = "${node.rpcPassword}"
+    ${optionalString (node.rpcUser != null) "rpc_user = \"${node.rpcUser}\""}
+    ${optionalString (node.rpcPassword != null) "rpc_password = \"${node.rpcPassword}\""}
     use_rest = ${boolToString node.useREST}
     implementation = "${node.implementation}"
 
