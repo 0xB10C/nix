@@ -7,12 +7,12 @@
 }:
 
 let
-  version = "5e2dc026ebf971ee0d5c50971cdd350d8e5c4e3e";
+  version = "799c4db8f75f607cdd8db9144b0b93510ae2f98d";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "transactionfee-info";
     rev = version;
-    sha256 = "sha256-iRxQ7FLqeDNFHFpDrSR7QBg4Asd3jEnm1emfM01c/GM=";
+    sha256 = "sha256-8oZlxL8u6jvRyTZC7Bk7HtHdr+5nwzcFBYQcal5GTSs=";
   };
 in
 {
@@ -26,7 +26,7 @@ in
 
     buildInputs = with pkgs; [ sqlite ];
 
-    cargoHash = "sha256-tfo+NWnaBYfEz6f6H8QEEHwRWDFsOTJH8q6m9wl2EUo=";
+    cargoHash = "sha256-+CcD/PzKI4NsOpww5t0xB7ej1wDSmda1WARXVptVRus=";
 
     meta = {
       description = "backend of transactionfee-info";
