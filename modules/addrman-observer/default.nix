@@ -5,7 +5,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. { }).addrman-observer;
   cfg = config.services.addrman-observer-proxy;
-  #hardening = import ../systemd-hardening.nix { };
+  hardening = import ../hardening.nix;
 
   nodeOpts = {
     options = {
@@ -117,7 +117,7 @@ in {
 
         EOF'';
 
-      serviceConfig = {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         ExecStart = "${cfg.package}/bin/proxy";
         Environment =
           "CONFIG_FILE=/etc/addrman-observer-proxy/config.toml RUST_LOG=info";
