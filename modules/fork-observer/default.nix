@@ -5,7 +5,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. { }).fork-observer;
   cfg = config.services.fork-observer;
-  #hardening = import ../systemd-hardening.nix { };
+  hardening = import ../hardening.nix;
 
   networkOpts = {
     options = {
@@ -259,7 +259,11 @@ in {
 
         EOF'';
 
-      serviceConfig = {
+      serviceConfig = hardening.default // 
+        # fork-observer connects to local and non-local IP addresses
+        # e.g. esplora APIs
+        hardening.allowAllIPAddresses
+        // {
         ExecStart = "${cfg.package}/bin/fork-observer";
         Environment =
           "CONFIG_FILE=/etc/fork-observer/config.toml RUST_LOG=info";
