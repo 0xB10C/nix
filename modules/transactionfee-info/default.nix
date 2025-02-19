@@ -10,6 +10,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. { }).transactionfee-info-backend;
   cfg = config.services.transactionfee-info-backend;
+  hardening = import ../hardening.nix;
 in
 {
   options = {
@@ -88,13 +89,11 @@ in
           --database-path ${cfg.databasePath} \
           --csv-path ${cfg.csvPath}
       '';
-      serviceConfig = {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         Type = "oneshot";
         User = "transactionfeeinfo";
         Group = "transactionfeeinfo";
-        PermissionsStartOnly = true;
-        MemoryDenyWriteExecute = true;
-        # DynamicUser = true;
+        ReadWriteDirectories = "/var/lib/transactionfee-info";
       };
     };
   };
