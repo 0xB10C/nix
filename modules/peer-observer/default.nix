@@ -5,7 +5,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. {}).peer-observer;
   cfg = config.services.peer-observer;
-  hardening = {};#import ../systemd-hardening.nix { };
+  hardening = import ../hardening.nix;
 in {
 
   options = {
@@ -121,8 +121,7 @@ in {
       after = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
       wants = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
       startLimitIntervalSec = 120;
-      serviceConfig =
-        {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --bitcoind-pid-file ${cfg.extractor.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractor.natsAddress} ${cfg.extractor.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
@@ -153,7 +152,7 @@ in {
         after = ["network-online.target" "peer-observer-extractor.service" ];
         wants = ["network-online.target" "peer-observer-extractor.service" ];
         startLimitIntervalSec = 120;
-        serviceConfig = {
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.extractor.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
@@ -176,7 +175,7 @@ in {
         after = ["network-online.target" "peer-observer-extractor.service" ];
         wants = ["network-online.target" "peer-observer-extractor.service" ];
         startLimitIntervalSec = 120;
-        serviceConfig = {
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.extractor.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
@@ -201,7 +200,7 @@ in {
         after = ["network-online.target" "peer-observer-extractor.service" ];
         wants = ["network-online.target" "peer-observer-extractor.service" ];
         startLimitIntervalSec = 120;
-        serviceConfig = {
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.extractor.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
