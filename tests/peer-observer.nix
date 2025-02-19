@@ -74,6 +74,8 @@ in {
   };
 
   testScript = ''
+    import time
+  
     # HACK: don't start these from the beginning
     # needs https://github.com/0xB10C/peer-observer/issues/37
     machine.systemctl("stop peer-observer-metrics.service")
@@ -87,6 +89,9 @@ in {
     machine.wait_for_open_port(${toString BITCOIND_PORT})
     
     machine.wait_for_unit("peer-observer-extractor.service", timeout=15)
+
+    # give the extractor a bit of time to start up
+    time.sleep(5)
 
     machine.systemctl("start peer-observer-metrics.service")
     machine.wait_for_unit("peer-observer-metrics.service", timeout=15)
@@ -106,6 +111,9 @@ in {
 
     machine.systemctl("start peer-observer-websocket.service")
     machine.wait_for_unit("peer-observer-websocket.service", timeout=15)
+    # this will "panic" with Failed to accept WebSocket: HandshakeError::Failure(Protocol(HandshakeIncomplete))
+    # but that's expected as we only open a TCP connection to the websocket server, and don't actually do the Websocket
+    # handshake
     machine.wait_for_open_port(${toString PEER_OBSERVER_WEBSOCKET_PORT})
   '';
 }
