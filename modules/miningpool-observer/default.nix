@@ -10,6 +10,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. { }).miningpool-observer;
   cfg = config.services.miningpool-observer;
+  hardening = import ../hardening.nix;
 in
 {
 
@@ -189,7 +190,7 @@ in
 
         EOF'';
 
-      serviceConfig = {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         ExecStart = "${cfg.package}/bin/miningpool-observer-daemon";
         Environment = "CONFIG_FILE=/etc/miningpool-observer/daemon-config.toml";
         Restart = "always";
@@ -230,7 +231,7 @@ in
                       base_url =  "${cfg.siteBaseURL}"
         EOF'';
 
-      serviceConfig = {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         ExecStart = "${cfg.package}/bin/miningpool-observer-web";
         Environment = "CONFIG_FILE=/etc/miningpool-observer/web-config.toml";
         Restart = "always";
