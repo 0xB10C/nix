@@ -26,7 +26,12 @@ in
 
     buildInputs = with pkgs; [ sqlite ];
 
-    cargoHash = "sha256-+CcD/PzKI4NsOpww5t0xB7ej1wDSmda1WARXVptVRus=";
+    # during the integration tests, don't try to download a bitcoind binary
+    # use the nix one instead
+    BITCOIND_SKIP_DOWNLOAD = "1";
+    BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+
+    cargoHash = "sha256-uZIuVJZqV1b+vx7P6evwYXtJecTUFszlbrLwhPPVRNI=";
 
     meta = {
       description = "backend of transactionfee-info";
