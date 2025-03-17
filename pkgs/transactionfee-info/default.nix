@@ -7,12 +7,12 @@
 }:
 
 let
-  version = "dea963dbe545ac14f167eb33684503bae4bbba06";
+  version = "a5d030e136749e7d7c0ae14924fb7958471be820";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "transactionfee-info";
     rev = version;
-    sha256 = "sha256-hKX82cUT4qCUweAxKi1+aR0lYNprdk/Psk/Dck2p3rw=";
+    sha256 = "sha256-C7v8Mq6ML4d+jEd7Qz8xf5DBeqLbRTGD4md7gLnA+uk=";
   };
 in
 {
