@@ -7,12 +7,12 @@
 }:
 
 let
-  version = "37e7f65eec7387ffec2afbf8729cc932f34d1bc6";
+  version = "1588d86a76ab1e2c3f06c10b29b5878490cae995";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "transactionfee-info";
     rev = version;
-    sha256 = "sha256-1XcirmgzH8f+1ymaDuqE0VfhBGUErpM+zWsUiG2KHyQ=";
+    sha256 = "sha256-jzZIn1NCAucQlRLBrc/GToM95f15INr/kX4wrxyagOg=";
   };
 in
 {
@@ -24,9 +24,20 @@ in
 
     sourceRoot = "source/backend";
 
-    buildInputs = with pkgs; [ sqlite ];
+    buildInputs = with pkgs; [ sqlite bitcoind ];
 
-    cargoHash = "sha256-ZGV6s8sv+UwWdzB20upHMZRPVS3CPgefwMgpZVfhK40=";
+    # during the integration tests, don't try to download a bitcoind binary
+    # use the nix one instead
+    BITCOIND_SKIP_DOWNLOAD = 1;
+    BITCOIND_EXE="${pkgs.bitcoind}/bin/bitcoind";
+
+    cargoLock = {
+      lockFile = ./Cargo.lock;
+      outputHashes = {
+        "rawtx-rs-0.1.14" = "sha256-OppVX6VdmlhoFqPaZjsT2+0cTWeghaXaPXQ28cn9n0k=";
+      };
+    };
+
 
     meta = {
       description = "backend of transactionfee-info";
@@ -56,5 +67,5 @@ in
       homepage = "https://github.com/0xb10c/transactionfee-info";
       license = lib.licenses.mit;
     };
-  }; 
+  };
 }
