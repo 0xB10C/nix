@@ -7,12 +7,12 @@
 }:
 
 let
-  version = "bb2342d79cba6f2f9ecaaca0f9b092ad711adc1f";
+  version = "4025e828d54c0077895118a4370119680f7828d2";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "transactionfee-info";
     rev = version;
-    sha256 = "sha256-2MBydfPAVpuSV9aDRgTv/NfBgt7UA0FnXuVnI3noZnc=";
+    sha256 = "sha256-ewj82VYdIC30aScKfttKuDLhziAh63tme9hKdF+TZnc=";
   };
 in
 {
@@ -31,7 +31,7 @@ in
     BITCOIND_SKIP_DOWNLOAD = "1";
     BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
 
-    cargoHash = "sha256-Nl7I1euaYfzFoDrQQKDcS18CnwOzyVUPk+FKRY+RT8I=";
+    cargoHash = "sha256-YaP5Q2ho4ST4xJONvhii7ClPujRuqDQxDpwXsk742+k=";
 
     meta = {
       description = "backend of transactionfee-info";
