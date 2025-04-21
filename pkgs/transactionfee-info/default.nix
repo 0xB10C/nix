@@ -7,12 +7,12 @@
 }:
 
 let
-  version = "4025e828d54c0077895118a4370119680f7828d2";
+  version = "849c1bc2dd9fcd4afc59b1d0289c69e6dd2084a6";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "transactionfee-info";
     rev = version;
-    sha256 = "sha256-ewj82VYdIC30aScKfttKuDLhziAh63tme9hKdF+TZnc=";
+    sha256 = "sha256-vx25hd6uOjK/WGD70InZJr34kgiIag3Pufo951mvzR4=";
   };
 in
 {
@@ -61,5 +61,5 @@ in
       homepage = "https://github.com/0xb10c/transactionfee-info";
       license = lib.licenses.mit;
     };
-  }; 
+  };
 }
