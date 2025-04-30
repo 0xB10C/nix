@@ -24,8 +24,29 @@
     in
     {
 
-      packages = forAllSystems (
-        system: import ./default.nix { pkgs = import nixpkgs { inherit system; }; }
+      packages = forAllSystems (system:
+        import ./default.nix { pkgs = import nixpkgs { inherit system; }; } // {
+          # this is only used to test buidling the frontend with the
+          # lib function. Using this directly does not make sense. Use the
+          # mkMainnetObserverFrontend function
+          mainnet-observer-frontend-placeholder = self.lib.${system}.mkMainnetObserverFrontend {
+            title = "TITLE_PLACEHOLDER";
+            baseURL = "URL_PLACEHOLDER";
+            htmlTopRight = "TOP-RIGHT PLACEHOLDER";
+            htmlBottomRight = "BOTTOM-RIGHT PLACEHOLDER";
+          };
+        }
+      );
+
+      lib = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in {
+          mkMainnetObserverFrontend = { title, baseURL, htmlTopRight, htmlBottomRight }:
+            (pkgs.callPackage ./pkgs/mainnet-observer { }).frontend {
+              inherit title baseURL htmlTopRight htmlBottomRight;
+            };
+        }
       );
 
       nixosModules = {
