@@ -8,20 +8,20 @@
 with lib;
 
 let
-  pkg = (pkgs.callPackage ../.. { }).transactionfee-info-backend;
-  cfg = config.services.transactionfee-info-backend;
+  pkg = (pkgs.callPackage ../.. { }).mainnet-observer-backend;
+  cfg = config.services.mainnet-observer-backend;
   hardening = import ../hardening.nix;
 in
 {
   options = {
 
-    services.transactionfee-info-backend = {
-      enable = mkEnableOption "transactionfee-info backend";
+    services.mainnet-observer-backend = {
+      enable = mkEnableOption "mainnet-observer backend";
 
       package = mkOption {
         type = types.package;
         default = pkg;
-        description = "The transactionfee-info backend package to use.";
+        description = "The mainnet-observer backend package to use.";
       };
 
       port = mkOption {
@@ -38,52 +38,52 @@ in
 
       databasePath = mkOption {
         type = types.str;
-        default = "/var/lib/transactionfee-info/db.sqlite";
+        default = "/var/lib/mainnet-observer/db.sqlite";
         description = "Bitcoin Core RPC server host";
       };
 
       csvPath = mkOption {
         type = types.str;
-        default = "/var/lib/transactionfee-info/csv";
+        default = "/var/lib/mainnet-observer/csv";
         description = "Directory where the CSV files are generated to.";
       };
 
       timerOnCalendar = mkOption {
         type = types.str;
         default = "01:32";
-        description = "Systemd OnCalendar run-interval of the transactionfee-info backend.";
+        description = "Systemd OnCalendar run-interval of the mainnet-observer backend.";
       };
     };
   };
 
   config = mkIf cfg.enable {
     users = {
-      users.transactionfeeinfo = {
+      users.mainnet-observer = {
         isSystemUser = true;
-        group = "transactionfeeinfo";
-        home = "/var/lib/transactionfee-info";
+        group = "mainnet-observer";
+        home = "/var/lib/mainnet-observer";
       };
-      groups.transactionfeeinfo = { };
+      groups.mainnet-observer = { };
     };
 
     systemd.tmpfiles.rules = [
-      "d '/var/lib/transactionfee-info' 0775 'transactionfeeinfo' 'transactionfeeinfo' - -"
+      "d '/var/lib/mainnet-observer' 0775 'mainnet-observer' 'mainnet-observer' - -"
     ];
 
-    systemd.timers."transactionfee-info-backend" = {
+    systemd.timers."mainnet-observer-backend" = {
       wantedBy = [ "timers.target" ];
-      partOf = [ "transactionfee-info-backend.service" ];
+      partOf = [ "mainnet-observer-backend.service" ];
       timerConfig.OnCalendar = cfg.timerOnCalendar;
     };
 
-    systemd.services.transactionfee-info-backend = {
-      description = "transactionfee-info backend";
+    systemd.services.mainnet-observer-backend = {
+      description = "mainnet-observer backend";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       script = ''
         mkdir -p ${cfg.csvPath}
         chmod a+r ${cfg.csvPath}
-        ${cfg.package}/bin/transactionfee-info-backend \
+        ${cfg.package}/bin/mainnet-observer-backend \
           --rest-host ${cfg.host} \
           --rest-port ${toString cfg.port} \
           --database-path ${cfg.databasePath} \
@@ -91,9 +91,9 @@ in
       '';
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         Type = "oneshot";
-        User = "transactionfeeinfo";
-        Group = "transactionfeeinfo";
-        ReadWriteDirectories = "/var/lib/transactionfee-info";
+        User = "mainnet-observer";
+        Group = "mainnet-observer";
+        ReadWriteDirectories = "/var/lib/mainnet-observer";
       };
     };
   };

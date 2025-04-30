@@ -38,7 +38,7 @@
         stratum-observer = mkTest [ ./tests/stratum-observer.nix ] system;
         addrman-observer = mkTest [ ./tests/addrman-observer.nix ] system;
         peer-observer = mkTest [ ./tests/peer-observer.nix ] system;
-        transactionfee-info = mkTest [ ./tests/transactionfee-info.nix ] system;
+        mainnet-observer = mkTest [ ./tests/mainnet-observer.nix ] system;
         fork-observer = mkTest [ ./tests/fork-observer.nix ] system;
         miningpool-observer = mkTest [ ./tests/miningpool-observer.nix ] system;
       });

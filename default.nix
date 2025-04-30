@@ -1,5 +1,8 @@
 { pkgs ? import <nixpkgs> { } }:
 
+let
+  default-mainnet-observer-frontend = title: baseURL: htmlTopRight: htmlBottomRight: (pkgs.callPackage ./pkgs/mainnet-observer { }).frontend { inherit title baseURL htmlTopRight htmlBottomRight; };
+in
 {
   addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
   asmap-data = pkgs.callPackage ./pkgs/asmap-data { };
@@ -16,6 +19,8 @@
   stratum-observer = pkgs.callPackage ./pkgs/stratum-observer { };
   miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
   peer-observer = pkgs.callPackage ./pkgs/peer-observer { };
-  transactionfee-info-backend = (pkgs.callPackage ./pkgs/transactionfee-info { }).backend;
-  transactionfee-info-frontend = (pkgs.callPackage ./pkgs/transactionfee-info { }).frontend;
+  mainnet-observer-backend = (pkgs.callPackage ./pkgs/mainnet-observer { }).backend;
+
+  # this is the frontend configured with placeholders. You might want to configure it differently.
+  default-mainnet-observer-frontend = (pkgs.callPackage ./pkgs/mainnet-observer { }).frontend { title = "TITLE_PLACEHOLDER"; baseURL = "URL_PLACEHOLDER"; htmlTopRight = "TOP-RIGHT PLACEHOLDER"; htmlBottomRight = "BOTTOM-RIGHT PLACEHOLDER"; };
 }

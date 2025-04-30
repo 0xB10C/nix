@@ -7,5 +7,5 @@
   miningpool-observer = ./miningpool-observer;
   peer-observer = ./peer-observer;
   stratum-observer = ./stratum-observer;
-  transactionfee-info = ./transactionfee-info;
+  mainnet-observer = ./mainnet-observer;
 }
