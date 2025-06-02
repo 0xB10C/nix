@@ -24,7 +24,7 @@ in {
     BITCOIND_SKIP_DOWNLOAD = "1";
     BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
 
-    cargoHash = "sha256-147O+H8Vc6BD1N9V6PNceOnJVBcKU96nM96DWkS3pKE=";
+    cargoHash = "sha256-wiamT85Cn5/I6I3817w7dbAW6Ad6Y+HnjLd+C070QqI=";
 
     meta = {
       description = "backend of mainnet-observer";

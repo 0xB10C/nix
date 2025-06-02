@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage rec {
 
   nativeBuildInputs = with pkgs; [ sqlite ];
 
-  cargoHash = "sha256-Vz93a0BACEjFAr7dksIQ6yjqjROX2D1JsVvOMkhQnN4=";
+  cargoHash = "sha256-y2fwyFkYZxvHN3KA3vBw31eP/j2z3n+Bs+1vJJJnGw0=";
 
   postInstall = ''
     cp -r www $out/www
