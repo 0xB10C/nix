@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "26 6 * * *" # https://crontab.guru/#26_10_*_*_*
-     
+
 jobs:
   update-flake-packages:
     strategy:
       fail-fast: false
       matrix:
         nixPath:
-          - nixpkgs=channel:nixos-24.11
+          - nixpkgs=channel:nixos-25.05
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,9 +24,9 @@ jobs:
           nix_path: "${{ matrix.nixPath }}"
           extra_nix_config: |
             experimental-features = nix-command flakes
-    
+
       - uses: DeterminateSystems/magic-nix-cache-action@main
-    
+
       - name: Show nixpkgs version
         run: nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
 
@@ -34,12 +34,12 @@ jobs:
         run: |
             git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --global user.name "github-actions[bot]"
-  
+
       - name: Run nix-update on each package, push to a branch, and open a PR if it doesn't yet exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            pkgs=($(nix flake show --json | jq -r '.packages."x86_64-linux" | keys[] ' | grep -v bitcoind-tracing))          
+            pkgs=($(nix flake show --json | jq -r '.packages."x86_64-linux" | keys[] ' | grep -v bitcoind-tracing))
             for i in "${pkgs[@]}"
             do
               echo "trying to update package: '$i'"
@@ -59,11 +59,11 @@ jobs:
 
               BRANCH="auto-update-$i"
               git push -f origin ${{ github.ref_name }}:$BRANCH
-              
+
               # Only open a PR if the branch is not attached to an existing one
               PR=$(gh pr list --head $BRANCH --json number -q '.[0].number')
               if [ -z $PR ]; then
-                PR_TITLE="Automated package update of $i ($(date -Idate))" 
+                PR_TITLE="Automated package update of $i ($(date -Idate))"
                 gh pr create --head $BRANCH --title="$PR_TITLE" --body="Auto updating package '$i'. See commit(s) for details." --reviewer 0xb10c
               else
                 echo "Pull request already exists, won't create a new one."
