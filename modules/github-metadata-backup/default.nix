@@ -23,10 +23,10 @@ let
         default = null;
         description = lib.mdDoc "The user used to authenticate to the remote.";
       };
-      token = mkOption {
-        type = types.str;
+      tokenFile = mkOption {
+        type = types.path;
         default = null;
-        description = lib.mdDoc "The token or password use to authenticate to the remote.";
+        description = lib.mdDoc "A path to a token or password file use to authenticate to the remote.";
       };
     };
   };
@@ -209,7 +209,7 @@ in {
             # ${gitRemote.name}
             ${pkgs.git}/bin/git -C ${cfg.destination} remote add ${gitRemote.name} ${gitRemote.remote}
             echo "pushing ${cfg.owner}:${cfg.repository} backup to remote '${gitRemote.name}' (${gitRemote.remote})"
-            ${pkgs.git}/bin/git -C ${cfg.destination} -c credential.helper='!f() { sleep 1; echo "username=${gitRemote.user}"; echo "password=${gitRemote.token}"; }; f' push --set-upstream ${gitRemote.name} master
+            ${pkgs.git}/bin/git -C ${cfg.destination} -c credential.helper='!f() { sleep 1; echo "username=${gitRemote.user}"; echo "password=$(cat ${gitRemote.tokenFile})"; }; f' push --set-upstream ${gitRemote.name} master
             '') cfg.pushToRemotes }
 
           echo "done pushing to ${cfg.owner}:${cfg.repository} backup remotes."
