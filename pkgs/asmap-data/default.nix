@@ -2,13 +2,13 @@
 
 stdenv.mkDerivation rec {
   name = "asmap-data";
-  version = "9f2b4c12946de0acb29cd2bdd2785def1af5067b";
+  version = "4c6a7cde4f9abbabae8e3b6c56f9cb6c3670ea1d";
   
   src = pkgs.fetchFromGitHub {
     owner = "asmap";
     repo = "asmap-data"; # this is a demo repository. Update the description below when switching to another repo.
     rev = version;
-    sha256 = "sha256-7fClqrph5ZhH3t2HKxyPDH+eM1mQvNzoiSGrvV/52Xk=";
+    sha256 = "sha256-7iDIisT78N4qBI09u3e8lqr906Sr97q7AK6ezmCBx4U=";
   };
 
   installPhase = ''
