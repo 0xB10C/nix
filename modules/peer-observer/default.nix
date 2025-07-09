@@ -21,20 +21,20 @@ in {
 
       extractor = {
         enable = mkEnableOption "peer-observer extractor";
-        
+
         natsAddress = mkOption {
           type = types.str;
           default = "127.0.0.1:4222";
           example = "127.0.0.1:4222";
           description = "Address of the NATS server the extractor publishes events to";
         };
-        
+
         bitcoindPath = mkOption {
           type = types.str;
           default = null;
           description = "Path to the bitcoind executable.";
         };
-        
+
         bitcoindPIDFile = mkOption {
           type = types.str;
           default = null;
@@ -47,7 +47,7 @@ in {
           example = "bitcoind-mainnet";
           description = "The bitcoind-*.service peer-observer depends on. i.e. the bitcoind process which should be traced. This is always 'bitcoind-<name>', where <name> is the name of the NixOS bitcoind service.";
         };
-        
+
         extraArgs= mkOption {
           type = types.str;
           default = "";
@@ -58,7 +58,7 @@ in {
 
       metrics = {
         enable = mkEnableOption "prometheus metrics";
-        
+
         metricsAddress = mkOption {
           type = types.str;
           default = "127.0.0.1:8282";
@@ -66,7 +66,7 @@ in {
           description = "Address the metrics webserver should listen on.";
         };
       };
-      
+
       addrConnectivity = {
         enable = mkEnableOption "addr connectivity lookup";
 
@@ -77,7 +77,7 @@ in {
           description = "Address the metrics webserver should listen on.";
         };
       };
-      
+
       websocket = {
         enable = mkEnableOption "websocket tool";
 
@@ -88,7 +88,7 @@ in {
           description = "Address the websocket server should listen on.";
         };
       };
-      
+
     };
   };
   config = mkIf (cfg.extractor.enable || cfg.metrics.enable || cfg.addrConnectivity.enable) {
@@ -122,7 +122,7 @@ in {
       wants = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --bitcoind-pid-file ${cfg.extractor.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractor.natsAddress} ${cfg.extractor.extraArgs}";
+          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --bitcoind-pid-file ${cfg.extractor.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractor.natsAddress} ${cfg.extractor.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -193,7 +193,7 @@ in {
           Group = "peerobserver";
         };
       };
-      
+
       systemd.services.peer-observer-websocket = mkIf cfg.websocket.enable {
         description = "peer-observer websocket";
         wantedBy = [ "multi-user.target" ];
