@@ -134,7 +134,7 @@ let
       };
 
       implementation = mkOption {
-        type = types.enum [ "BitcoinCore" "btcd" "esplora" ];
+        type = types.enum [ "BitcoinCore" "btcd" "esplora" "electrum" ];
         default = "BitcoinCore";
         description = "The Bitcoin implementation to query";
       };
@@ -259,7 +259,7 @@ in {
 
         EOF'';
 
-      serviceConfig = hardening.default // 
+      serviceConfig = hardening.default //
         # fork-observer connects to local and non-local IP addresses
         # e.g. esplora APIs
         hardening.allowAllIPAddresses
