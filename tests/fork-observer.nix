@@ -82,6 +82,15 @@ in {
               useREST = false;
               implementation = "btcd";
             }
+            {
+              id = 570;
+              name = "electrum";
+              description = "This is an electrum node.";
+              rpcPort = 12347;
+              rpcHost = "127.0.0.1";
+              useREST = false;
+              implementation = "electrum";
+            }
           ];
         }
       ];
@@ -93,22 +102,22 @@ in {
   testScript = ''
     import time
     import json
-    
+
     machine.systemctl("stop fork-observer.service")
-    
+
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
     machine.wait_for_open_port(${toString BITCOIND_RPC_PORT})
-  
+
 
     # give bitcoind a bit of time to start up before we hit the RPC interface
     time.sleep(5)
     machine.systemctl("start fork-observer.service")
-    
+
     # configuration file should have been created
     config = machine.succeed("cat /etc/fork-observer/config.toml")
     print("Configuration file:")
     print(config)
-    
+
     machine.wait_for_unit("fork-observer.service", timeout=15)
     machine.wait_for_open_port(${toString FORK_OBSERVER_PORT})
 
@@ -118,7 +127,7 @@ in {
     networks = machine.succeed("curl ${ADDRESS}/api/networks.json");
     print("networks.json response", networks)
     n = json.loads(networks)
-    
+
     assert len(n["networks"]) == 1
     network = n["networks"][0]
     assert network["id"] == ${toString NETWORK_ID}
@@ -129,7 +138,7 @@ in {
     print("data.json response:", data)
     d = json.loads(data)
 
-    assert len(d["nodes"]) == 3
+    assert len(d["nodes"]) == 4
     node = d["nodes"][0]
     assert node["id"] == 567
     assert node["name"] == "Node 567"
