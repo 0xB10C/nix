@@ -19,41 +19,45 @@ in {
         description = ''The peer-observer package to use.'';
       };
 
-      extractor = {
-        enable = mkEnableOption "peer-observer extractor";
+      extractors = {
 
-        natsAddress = mkOption {
-          type = types.str;
-          default = "127.0.0.1:4222";
-          example = "127.0.0.1:4222";
-          description = "Address of the NATS server the extractor publishes events to";
+        ebpf = {
+          enable = mkEnableOption "peer-observer extractor";
+
+          natsAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:4222";
+            example = "127.0.0.1:4222";
+            description = "Address of the NATS server the extractor publishes events to";
+          };
+
+          bitcoindPath = mkOption {
+            type = types.str;
+            default = null;
+            description = "Path to the bitcoind executable.";
+          };
+
+          bitcoindPIDFile = mkOption {
+            type = types.str;
+            default = null;
+            description = "The path to the bitcoind PID file. This file is read by systemd during extractor startup.";
+          };
+
+          dependsOn = mkOption {
+            type = types.str;
+            default = null;
+            example = "bitcoind-mainnet";
+            description = "The bitcoind-*.service peer-observer depends on. i.e. the bitcoind process which should be traced. This is always 'bitcoind-<name>', where <name> is the name of the NixOS bitcoind service.";
+          };
+
+          extraArgs= mkOption {
+            type = types.str;
+            default = "";
+            example = "--no-connection-tracepoints --addrman-tracepoints";
+            description = "Extra arguments to pass to the peer-observer extractor.";
+          };
         };
 
-        bitcoindPath = mkOption {
-          type = types.str;
-          default = null;
-          description = "Path to the bitcoind executable.";
-        };
-
-        bitcoindPIDFile = mkOption {
-          type = types.str;
-          default = null;
-          description = "The path to the bitcoind PID file. This file is read by systemd during extractor startup.";
-        };
-
-        dependsOn = mkOption {
-          type = types.str;
-          default = null;
-          example = "bitcoind-mainnet";
-          description = "The bitcoind-*.service peer-observer depends on. i.e. the bitcoind process which should be traced. This is always 'bitcoind-<name>', where <name> is the name of the NixOS bitcoind service.";
-        };
-
-        extraArgs= mkOption {
-          type = types.str;
-          default = "";
-          example = "--no-connection-tracepoints --addrman-tracepoints";
-          description = "Extra arguments to pass to the peer-observer extractor.";
-        };
       };
 
       metrics = {
@@ -91,7 +95,7 @@ in {
 
     };
   };
-  config = mkIf (cfg.extractor.enable || cfg.metrics.enable || cfg.addrConnectivity.enable) {
+  config = mkIf (cfg.extractors.ebpf.enable || cfg.metrics.enable || cfg.addrConnectivity.enable || cfg.websocket.enable) {
     users = {
       users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
       groups.peerobserver = { };
@@ -103,26 +107,26 @@ in {
 
     # before we can start the peer-observer, wait until the PID file has been created by bitcoind
     # in the RuntimeDirectory
-    systemd.services."${cfg.extractor.dependsOn}".serviceConfig = {
-      RuntimeDirectory = "${cfg.extractor.dependsOn}";
+    systemd.services."${cfg.extractors.ebpf.dependsOn}".serviceConfig = {
+      RuntimeDirectory = "${cfg.extractors.ebpf.dependsOn}";
       ExecStartPost = ''
         ${pkgs.bash}/bin/bash -c ' \
-        while ! stat ${cfg.extractor.bitcoindPIDFile} 2>/dev/null; do \
+        while ! stat ${cfg.extractors.ebpf.bitcoindPIDFile} 2>/dev/null; do \
           echo \"Waiting for bitcoind PID file...\"; \
           sleep 1; \
         done; \
-        chmod +r ${cfg.extractor.bitcoindPIDFile}'
+        chmod +r ${cfg.extractors.ebpf.bitcoindPIDFile}'
       '';
     };
 
-    systemd.services.peer-observer-extractor = mkIf cfg.extractor.enable {
+    systemd.services.peer-observer-ebpf-extractor = mkIf cfg.extractors.ebpf.enable {
       description = "peer observer";
       wantedBy = [ "multi-user.target" ];
-      after = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
-      wants = ["network-online.target" "${cfg.extractor.dependsOn}.service" ];
+      after = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" ];
+      wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" ];
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractor.bitcoindPath} --bitcoind-pid-file ${cfg.extractor.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractor.natsAddress} ${cfg.extractor.extraArgs}";
+          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractors.ebpf.natsAddress} ${cfg.extractors.ebpf.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -149,11 +153,11 @@ in {
       systemd.services.peer-observer-metrics = mkIf cfg.metrics.enable {
         description = "peer-observer metrics";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" "peer-observer-extractor.service" ];
-        wants = ["network-online.target" "peer-observer-extractor.service" ];
+        after = ["network-online.target" ];
+        wants = ["network-online.target" ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.extractor.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.extractors.ebpf.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -172,11 +176,11 @@ in {
       systemd.services.peer-observer-addr-connectivity-check = mkIf cfg.addrConnectivity.enable {
         description = "peer-observer addr-connectivity-check";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" "peer-observer-extractor.service" ];
-        wants = ["network-online.target" "peer-observer-extractor.service" ];
+        after = ["network-online.target" ];
+        wants = ["network-online.target" ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.extractor.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.extractors.ebpf.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -197,11 +201,11 @@ in {
       systemd.services.peer-observer-websocket = mkIf cfg.websocket.enable {
         description = "peer-observer websocket";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" "peer-observer-extractor.service" ];
-        wants = ["network-online.target" "peer-observer-extractor.service" ];
+        after = ["network-online.target" ];
+        wants = ["network-online.target" ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.extractor.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
+          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.extractors.ebpf.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'

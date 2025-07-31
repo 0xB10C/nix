@@ -22,6 +22,7 @@ in {
 
     services.bitcoind."regtest" = {
       enable = true;
+      # when updating to v29, remove the extraArgs = "--no-connection-tracepoints";
       package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v28; # might needs to be updated from time to time
       port = 12345;
       # needs to be "/run/bitcoind-<name>/bitcoind.pid"
@@ -44,15 +45,16 @@ in {
     systemd.services.peer-observer-extractor.serviceConfig.Restart = lib.mkForce "no";
     systemd.services.peer-observer-extractor.serviceConfig.Environment = "RUST_LOG=debug";
     services.peer-observer = {
-      extractor = {
-        dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
-        enable = true;
-        bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
-        bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
-        natsAddress = "127.0.0.1:${toString NATS_PORT}";
-        # can be removed once https://github.com/bitcoin/bitcoin/pull/25832 is merged
-        # and included in a release
-        extraArgs = "--no-connection-tracepoints";
+      extractors = {
+        ebpf = {
+          enable = true;
+          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
+          bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
+          bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
+          natsAddress = "127.0.0.1:${toString NATS_PORT}";
+          # can be removed once we use v29
+          extraArgs = "--no-connection-tracepoints";
+        };
       };
 
       metrics = {
@@ -88,7 +90,7 @@ in {
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
     machine.wait_for_open_port(${toString BITCOIND_PORT})
     
-    machine.wait_for_unit("peer-observer-extractor.service", timeout=15)
+    machine.wait_for_unit("peer-observer-ebpf-extractor.service", timeout=15)
 
     # give the extractor a bit of time to start up
     time.sleep(5)
@@ -115,5 +117,10 @@ in {
     # but that's expected as we only open a TCP connection to the websocket server, and don't actually do the Websocket
     # handshake
     machine.wait_for_open_port(${toString PEER_OBSERVER_WEBSOCKET_PORT})
+
+    # wait for the ebpf-extractor again, since it might fail when attaching the a tracepoint
+    time.sleep(5)
+    print("The ebpf extractor might have crashed while trying to attach to a tracepoint..")
+    machine.wait_for_unit("peer-observer-ebpf-extractor.service", timeout=2)
   '';
 }
