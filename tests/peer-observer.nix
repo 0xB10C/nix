@@ -57,32 +57,27 @@ in {
         };
       };
 
-      metrics = {
-        enable = true;
-        metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_METRICS_PORT}";
+      tools = {
+        metrics = {
+          enable = true;
+          metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_METRICS_PORT}";
+        };
+        
+        addrConnectivity = {
+          enable = true;
+          metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}";
+        };
+        
+        websocket = {
+          enable = true;
+          websocketAddress = "127.0.0.1:${toString PEER_OBSERVER_WEBSOCKET_PORT}";
+        };
       };
-      
-      addrConnectivity = {
-        enable = true;
-        metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}";
-      };
-      
-      websocket = {
-        enable = true;
-        websocketAddress = "127.0.0.1:${toString PEER_OBSERVER_WEBSOCKET_PORT}";
-      };
-      
     };
   };
 
   testScript = ''
     import time
-  
-    # HACK: don't start these from the beginning
-    # needs https://github.com/0xB10C/peer-observer/issues/37
-    machine.systemctl("stop peer-observer-metrics.service")
-    machine.systemctl("stop peer-observer-websocket.service")
-    machine.systemctl("stop peer-observer-addr-connectivity-check.service")
   
     machine.wait_for_unit("nats.service", timeout=15)
     machine.wait_for_open_port(${toString NATS_PORT})
@@ -95,15 +90,15 @@ in {
     # give the extractor a bit of time to start up
     time.sleep(5)
 
-    machine.systemctl("start peer-observer-metrics.service")
-    machine.wait_for_unit("peer-observer-metrics.service", timeout=15)
+    machine.systemctl("start peer-observer-tool-metrics.service")
+    machine.wait_for_unit("peer-observer-tool-metrics.service", timeout=15)
     machine.wait_for_open_port(${toString PEER_OBSERVER_METRICS_PORT})
     metrics = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_METRICS_PORT}/metrics")
     print(metrics)
     assert "peerobserver_runtime_start_timestamp" in metrics
 
-    machine.systemctl("start peer-observer-addr-connectivity-check.service")
-    machine.wait_for_unit("peer-observer-addr-connectivity-check.service", timeout=15)
+    machine.systemctl("start peer-observer-tool-addr-connectivity-check.service")
+    machine.wait_for_unit("peer-observer-tool-addr-connectivity-check.service", timeout=15)
     machine.wait_for_open_port(${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT})
 
     # right after start up, the addr connectivity check metrics endpoint
@@ -111,8 +106,8 @@ in {
     metrics2 = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}/metrics")
     assert len(metrics2) == 0
 
-    machine.systemctl("start peer-observer-websocket.service")
-    machine.wait_for_unit("peer-observer-websocket.service", timeout=15)
+    machine.systemctl("start peer-observer-tool-websocket.service")
+    machine.wait_for_unit("peer-observer-tool-websocket.service", timeout=15)
     # this will "panic" with Failed to accept WebSocket: HandshakeError::Failure(Protocol(HandshakeIncomplete))
     # but that's expected as we only open a TCP connection to the websocket server, and don't actually do the Websocket
     # handshake
