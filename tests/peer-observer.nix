@@ -22,8 +22,7 @@ in {
 
     services.bitcoind."regtest" = {
       enable = true;
-      # when updating to v29, remove the extraArgs = "--no-connection-tracepoints";
-      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v28; # might needs to be updated from time to time
+      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v29;
       port = 12345;
       # needs to be "/run/bitcoind-<name>/bitcoind.pid"
       pidFile = "/run/bitcoind-regtest/bitcoind.pid";
@@ -52,8 +51,6 @@ in {
           bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
           bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
           natsAddress = "127.0.0.1:${toString NATS_PORT}";
-          # can be removed once we use v29
-          extraArgs = "--no-connection-tracepoints";
         };
       };
 
@@ -120,7 +117,7 @@ in {
 
     # wait for the ebpf-extractor again, since it might fail when attaching the a tracepoint
     time.sleep(5)
-    print("The ebpf extractor might have crashed while trying to attach to a tracepoint..")
+    print("Checking if the ebpf extractor has crashed while trying to attach to a tracepoint..")
     machine.wait_for_unit("peer-observer-ebpf-extractor.service", timeout=2)
   '';
 }
