@@ -36,7 +36,7 @@ in {
       extractors = {
 
         ebpf = {
-          enable = mkEnableOption "peer-observer extractor";
+          enable = mkEnableOption "peer-observer ebpf-extractor";
 
           bitcoindPath = mkOption {
             type = types.str;
@@ -62,6 +62,42 @@ in {
             default = "";
             example = "--no-connection-tracepoints --addrman-tracepoints";
             description = "Extra arguments to pass to the peer-observer extractor.";
+          };
+        };
+
+        rpc = {
+          enable = mkEnableOption "peer-observer rpc-extractor";
+
+          rpcHost = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8332";
+            description = "Host of the RPC endpoint of Bitcoin Core";
+          };
+
+          rpcUser = mkOption {
+            type = types.str;
+            default = null;
+            description = "RPC username";
+          };
+
+          rpcPass = mkOption {
+            type = types.str;
+            default = null;
+            description = "RPC password";
+          };
+
+          dependsOn = mkOption {
+            type = types.str;
+            default = null;
+            example = "bitcoind-mainnet";
+            description = "The bitcoind-*.service peer-observer depends on. i.e. the bitcoind process which should be traced. This is always 'bitcoind-<name>', where <name> is the name of the NixOS bitcoind service.";
+          };
+
+          extraArgs= mkOption {
+            type = types.str;
+            default = "";
+            example = "--query-interval 20";
+            description = "Extra arguments to pass to the peer-observer RPC extractor.";
           };
         };
 
@@ -129,7 +165,7 @@ in {
     };
 
     systemd.services.peer-observer-ebpf-extractor = mkIf cfg.extractors.ebpf.enable {
-      description = "peer observer";
+      description = "peer-observer ebpf-extractor";
       wantedBy = [ "multi-user.target" ];
       after = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ];
       wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ]; # 
@@ -154,6 +190,25 @@ in {
             "clone3"
             "@debug"
           ];
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+
+      systemd.services.peer-observer-rpc-extractor = mkIf cfg.extractors.rpc.enable {
+        description = "peer-observer rpc-extractor";
+        wantedBy = [ "multi-user.target" ];
+        after = ["network-online.target" "${cfg.extractors.rpc.dependsOn}.service" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" "${cfg.extractors.rpc.dependsOn}.service" cfg.dependsOnNATSService ]; # 
+        startLimitIntervalSec = 120;
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+          ExecStart = "${cfg.package}/bin/rpc-extractor --rpc-host ${cfg.extractors.rpc.rpcHost} --rpc-user ${cfg.extractors.rpc.rpcUser} --rpc-password ${cfg.extractors.rpc.rpcPass} --nats-address ${cfg.natsAddress} ${cfg.extractors.rpc.extraArgs}";
+          Restart = "always";
+          # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          DynamicUser = true;
           User = "peerobserver";
           Group = "peerobserver";
         };
