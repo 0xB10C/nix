@@ -19,17 +19,24 @@ in {
         description = ''The peer-observer package to use.'';
       };
 
+      natsAddress = mkOption {
+        type = types.str;
+        default = "127.0.0.1:4222";
+        example = "127.0.0.1:4222";
+        description = "Address of the NATS server the extractors and tools connect to.";
+      };
+
+      dependsOnNATSService = mkOption {
+        type = types.str;
+        default = "nats.service";
+        example = null;
+        description = "The nats.service the peer-observer extractors and tools depend on. Use any other service if NATS is not running locally.";
+      };
+
       extractors = {
 
         ebpf = {
           enable = mkEnableOption "peer-observer extractor";
-
-          natsAddress = mkOption {
-            type = types.str;
-            default = "127.0.0.1:4222";
-            example = "127.0.0.1:4222";
-            description = "Address of the NATS server the extractor publishes events to";
-          };
 
           bitcoindPath = mkOption {
             type = types.str;
@@ -122,11 +129,11 @@ in {
     systemd.services.peer-observer-ebpf-extractor = mkIf cfg.extractors.ebpf.enable {
       description = "peer observer";
       wantedBy = [ "multi-user.target" ];
-      after = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" ];
-      wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" ];
+      after = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ];
+      wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ]; # 
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.extractors.ebpf.natsAddress} ${cfg.extractors.ebpf.extraArgs}";
+          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.natsAddress} ${cfg.extractors.ebpf.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -153,11 +160,11 @@ in {
       systemd.services.peer-observer-metrics = mkIf cfg.metrics.enable {
         description = "peer-observer metrics";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" ];
-        wants = ["network-online.target" ];
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.extractors.ebpf.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -176,11 +183,11 @@ in {
       systemd.services.peer-observer-addr-connectivity-check = mkIf cfg.addrConnectivity.enable {
         description = "peer-observer addr-connectivity-check";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" ];
-        wants = ["network-online.target" ];
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.extractors.ebpf.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -201,11 +208,11 @@ in {
       systemd.services.peer-observer-websocket = mkIf cfg.websocket.enable {
         description = "peer-observer websocket";
         wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" ];
-        wants = ["network-online.target" ];
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.extractors.ebpf.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
+          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'

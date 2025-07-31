@@ -44,13 +44,16 @@ in {
     systemd.services.peer-observer-extractor.serviceConfig.Restart = lib.mkForce "no";
     systemd.services.peer-observer-extractor.serviceConfig.Environment = "RUST_LOG=debug";
     services.peer-observer = {
+      
+      natsAddress = "127.0.0.1:${toString NATS_PORT}";
+      dependsOnNATSService = "nats.service";
+
       extractors = {
         ebpf = {
           enable = true;
           dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
           bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
           bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
-          natsAddress = "127.0.0.1:${toString NATS_PORT}";
         };
       };
 
