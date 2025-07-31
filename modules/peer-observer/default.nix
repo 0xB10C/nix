@@ -67,36 +67,38 @@ in {
 
       };
 
-      metrics = {
-        enable = mkEnableOption "prometheus metrics";
+      tools = {
+        metrics = {
+          enable = mkEnableOption "prometheus metrics";
 
-        metricsAddress = mkOption {
-          type = types.str;
-          default = "127.0.0.1:8282";
-          example = "127.0.0.1:8282";
-          description = "Address the metrics webserver should listen on.";
+          metricsAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8282";
+            example = "127.0.0.1:8282";
+            description = "Address the metrics webserver should listen on.";
+          };
         };
-      };
 
-      addrConnectivity = {
-        enable = mkEnableOption "addr connectivity lookup";
+        addrConnectivity = {
+          enable = mkEnableOption "addr connectivity lookup";
 
-        metricsAddress = mkOption {
-          type = types.str;
-          default = "127.0.0.1:8282";
-          example = "127.0.0.1:8282";
-          description = "Address the metrics webserver should listen on.";
+          metricsAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8282";
+            example = "127.0.0.1:8282";
+            description = "Address the metrics webserver should listen on.";
+          };
         };
-      };
 
-      websocket = {
-        enable = mkEnableOption "websocket tool";
+        websocket = {
+          enable = mkEnableOption "websocket tool";
 
-        websocketAddress = mkOption {
-          type = types.str;
-          default = "127.0.0.1:8282";
-          example = "127.0.0.1:8282";
-          description = "Address the websocket server should listen on.";
+          websocketAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8282";
+            example = "127.0.0.1:8282";
+            description = "Address the websocket server should listen on.";
+          };
         };
       };
 
@@ -157,14 +159,14 @@ in {
         };
       };
 
-      systemd.services.peer-observer-metrics = mkIf cfg.metrics.enable {
+      systemd.services.peer-observer-tool-metrics = mkIf cfg.tools.metrics.enable {
         description = "peer-observer metrics";
         wantedBy = [ "multi-user.target" ];
         after = ["network-online.target" cfg.dependsOnNATSService ];
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.natsAddress} --metrics-address ${cfg.metrics.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.natsAddress} --metrics-address ${cfg.tools.metrics.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -180,14 +182,14 @@ in {
         };
       };
 
-      systemd.services.peer-observer-addr-connectivity-check = mkIf cfg.addrConnectivity.enable {
+      systemd.services.peer-observer-tool-addr-connectivity-check = mkIf cfg.tools.addrConnectivity.enable {
         description = "peer-observer addr-connectivity-check";
         wantedBy = [ "multi-user.target" ];
         after = ["network-online.target" cfg.dependsOnNATSService ];
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.natsAddress} --metrics-address ${cfg.addrConnectivity.metricsAddress}";
+          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.natsAddress} --metrics-address ${cfg.tools.addrConnectivity.metricsAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -205,14 +207,14 @@ in {
         };
       };
 
-      systemd.services.peer-observer-websocket = mkIf cfg.websocket.enable {
+      systemd.services.peer-observer-tool-websocket = mkIf cfg.tools.websocket.enable {
         description = "peer-observer websocket";
         wantedBy = [ "multi-user.target" ];
         after = ["network-online.target" cfg.dependsOnNATSService ];
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.natsAddress} --websocket-address ${cfg.websocket.websocketAddress}";
+          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.natsAddress} --websocket-address ${cfg.tools.websocket.websocketAddress}";
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
