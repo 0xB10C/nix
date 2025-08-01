@@ -1,12 +1,12 @@
 { stdenv, pkgs, lib, rustPlatform, ... }:
 
 let
-  version = "8702d6db4adbda2d25e93ee7eaf8ad3500c6448b";
+  version = "41ff9e9fac2266c71e406250bc07fd11d699b74a";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "mainnet-observer";
     rev = version;
-    sha256 = "sha256-M0ILlP8D49XKvtamhh1jpQMHzHOF/4QfSJHbxmtBXl4=";
+    sha256 = "sha256-hgby3kuchgf+KmR108qFTP5WNIeKzHd/jSmSidXkbY4=";
   };
 in {
   backend = rustPlatform.buildRustPackage rec {
@@ -24,7 +24,7 @@ in {
     BITCOIND_SKIP_DOWNLOAD = "1";
     BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
 
-    cargoHash = "sha256-Th3leCloW8wzY47Nt9p7DuESZKWnMrmugAUN0W1obxU=";
+    cargoHash = "sha256-0MqnejdXkY8IimQ1sT3J4EJLmdDLvboXkjXIQHrSi8Q=";
 
     meta = {
       description = "backend of mainnet-observer";
