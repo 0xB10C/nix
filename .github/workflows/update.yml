@@ -37,11 +37,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+            set -o xtrace
             pkgs=($(nix flake show --json | jq -r '.packages."x86_64-linux" | keys[] ' | grep -v bitcoind-tracing))
             for i in "${pkgs[@]}"
             do
-              echo "trying to update package: '$i'"
               git checkout master
+              echo "trying to update package: '$i'"
+              # Don't do the updates while on master, otherwise we pollute it with updates of other packages
+              BRANCH="auto-update-$i"
+              git branch -D $BRANCH || true
+              git checkout -b $BRANCH
               CURRENT_HEAD=$(git log -1 --format=%H)
               # HACK: "... || true" to avoid failing when no update is avaliable
               nix-shell -p nix-update --run "nix-update --flake --commit --build --version=branch $i || true"
@@ -55,13 +60,12 @@ jobs:
                 git log -1
               fi
 
-              BRANCH="auto-update-$i"
-              git push -f origin ${{ github.ref_name }}:$BRANCH
+              git push --set-upstream origin $BRANCH --force
 
               # Only open a PR if the branch is not attached to an existing one
               PR=$(gh pr list --head $BRANCH --json number -q '.[0].number')
               if [ -z $PR ]; then
-                PR_TITLE="Automated package update of $i ($(date -Idate))"
+                PR_TITLE="$i: $(date -Idate) automated package update"
                 gh pr create --head $BRANCH --title="$PR_TITLE" --body="Auto updating package '$i'. See commit(s) for details." --reviewer 0xb10c
               else
                 echo "Pull request already exists, won't create a new one."
