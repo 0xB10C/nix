@@ -42,6 +42,9 @@ jobs:
             do
               echo "trying to update package: '$i'"
               git checkout master
+              # Don't do the updates on master, otherwise we pollute it with updates of other packages
+              git branch -D auto-update-working-branch-$i || true
+              git checkout -b auto-update-working-branch-$i
               CURRENT_HEAD=$(git log -1 --format=%H)
               # HACK: "... || true" to avoid failing when no update is avaliable
               nix-shell -p nix-update --run "nix-update --flake --commit --build --version=branch $i || true"
