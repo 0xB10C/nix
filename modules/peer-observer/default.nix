@@ -140,7 +140,7 @@ in {
 
     };
   };
-  config = mkIf (cfg.extractors.ebpf.enable || cfg.metrics.enable || cfg.addrConnectivity.enable || cfg.websocket.enable) {
+  config = mkIf (cfg.extractors.ebpf.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable) {
     users = {
       users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
       groups.peerobserver = { };
