@@ -2,13 +2,13 @@
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
-  version = "7f67949f2227b166a31c38ca3fd0f2d0358a5596";
+  version = "749af37a6de146711cc4346b9449b109749c9830";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-rETWndmZnH1yC9SQEOEY3RYB5kBWUKqS44jw/ZOsLL4=";
+    sha256 = "sha256-T+lsheq5b6Ebflf7ZcYKVZSlqQ6EvBIyWPe5K9f1xoI=";
   };
 
   hardeningDisable = [
@@ -32,9 +32,17 @@ rustPlatform.buildRustPackage rec {
 
     # needed for libbpf-cargo
     pkgs.rustfmt
+
+    # needed for rust-bitcoin corepc-node tests
+    pkgs.bitcoind
   ];
 
-  cargoHash = "sha256-2JlWvschAC3H8DP4ljFsrPQnTbT7YJKrfBaGJWO6O7k=";
+  # during the integration tests, don't try to download a bitcoind binary
+  # use the nix one instead
+  BITCOIND_SKIP_DOWNLOAD = "1";
+  BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+
+  cargoHash = "sha256-4eyttDdcCr2YuynLVOF3E11WxnmxZ5UNnl96Ekzkpvo=";
 
   meta = with stdenv.lib; {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
