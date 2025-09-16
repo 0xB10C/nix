@@ -2,7 +2,7 @@ name: "Check for package updates"
 on:
   workflow_dispatch:
   schedule:
-    - cron: "26 6 * * *" # https://crontab.guru/#26_10_*_*_*
+    - cron: "26 3 * * *" # https://crontab.guru/#26_10_*_*_*
 
 jobs:
   update-flake-packages:
