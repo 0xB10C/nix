@@ -27,7 +27,7 @@ rustPlatform.buildRustPackage rec {
     pkgs.cmake
 
     # for building libbpf
-    pkgs.clang_14
+    pkgs.clang_18
     pkgs.pkg-config
 
     # needed for libbpf-cargo
