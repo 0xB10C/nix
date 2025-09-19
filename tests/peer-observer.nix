@@ -5,6 +5,7 @@ let
   PEER_OBSERVER_METRICS_PORT = 10090;
   PEER_OBSERVER_ADDR_CHECK_METRICS_PORT = 10080;
   PEER_OBSERVER_WEBSOCKET_PORT = 10060;
+  PEER_OBSERVER_P2PEXPORTER_PORT = 10070;
   NATS_PORT = 4222;
   BITCOIND_PORT = 12345;
   BITCOIND_RPC_PORT = 8332;
@@ -13,7 +14,7 @@ in {
   name = "peer-observer";
 
   nodes.machine = { config, lib, ... }: {
-    imports = [ 
+    imports = [
       ../modules/peer-observer/default.nix
     ];
 
@@ -30,6 +31,11 @@ in {
       extraConfig = ''
         regtest=1
         debug=net
+
+
+        [regtest]
+        # used to test the p2p-extractor
+        addnode=127.0.0.1:${toString PEER_OBSERVER_P2PEXPORTER_PORT}
       '';
       rpc = {
         port = BITCOIND_RPC_PORT;
@@ -39,6 +45,13 @@ in {
             "a086e1c71a326b56b490249203406ad6$30d91b328c812f1faf82783df5388b808b3a91a945a0f8bae071c2bef4549e7e";
         };
       };
+    };
+    # start the p2p-extractor before we start bitcoind:
+    # bitcoind will then directly connect to the p2p-extractor and not after a minute
+    # this ensures a faster test
+    systemd.services.bitcoind-regtest.serviceConfig = {
+      after = [ "peer-observer-p2p-extractor.service" ];
+      wants = [ "peer-observer-p2p-extractor.service" ];
     };
 
     services.nats = {
@@ -53,24 +66,31 @@ in {
     systemd.services.peer-observer-extractor.serviceConfig.Restart = lib.mkForce "no";
     systemd.services.peer-observer-extractor.serviceConfig.Environment = "RUST_LOG=debug";
     services.peer-observer = {
-      
+
       natsAddress = "127.0.0.1:${toString NATS_PORT}";
       dependsOnNATSService = "nats.service";
 
       extractors = {
         ebpf = {
           enable = true;
-          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
+          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service
           bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
           bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
         };
 
         rpc = {
           enable = true;
-          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service 
+          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service
           rpcHost = "127.0.0.1:${toString BITCOIND_RPC_PORT}";
           rpcUser = "peer-observer";
           rpcPass = "hunter2";
+        };
+
+        p2p = {
+          enable = true;
+          p2pAddress = "127.0.0.1:${toString PEER_OBSERVER_P2PEXPORTER_PORT}";
+          network = "regtest";
+          extraArgs = "--ping-interval 2 --log-level TRACE";
         };
       };
 
@@ -79,12 +99,12 @@ in {
           enable = true;
           metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_METRICS_PORT}";
         };
-        
+
         addrConnectivity = {
           enable = true;
           metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}";
         };
-        
+
         websocket = {
           enable = true;
           websocketAddress = "127.0.0.1:${toString PEER_OBSERVER_WEBSOCKET_PORT}";
@@ -95,16 +115,18 @@ in {
 
   testScript = ''
     import time
-  
+
     machine.wait_for_unit("nats.service", timeout=15)
     machine.wait_for_open_port(${toString NATS_PORT})
 
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
     machine.wait_for_open_port(${toString BITCOIND_PORT})
     machine.wait_for_open_port(${toString BITCOIND_RPC_PORT})
-    
+
     machine.wait_for_unit("peer-observer-ebpf-extractor.service", timeout=15)
     machine.wait_for_unit("peer-observer-rpc-extractor.service", timeout=15)
+    machine.wait_for_unit("peer-observer-p2p-extractor.service", timeout=15)
+    machine.wait_for_open_port(${toString PEER_OBSERVER_P2PEXPORTER_PORT})
 
     # give the extractor a bit of time to start up
     time.sleep(5)
@@ -118,12 +140,16 @@ in {
     # to test the rpc-extractor, check if the following metric is in there. If the metric is renamed, this will break..
     assert "peerobserver_rpc_peer_info_list_peers_tor_exit" in metrics
 
+    print("to test the p2p-extractor, check if the following metric is in there and that the value isn't zero:")
+    assert "peerobserver_p2pextractor_ping_duration_nanoseconds" in metrics
+    assert "peerobserver_p2pextractor_ping_duration_nanoseconds 0" not in metrics
+
     machine.systemctl("start peer-observer-tool-addr-connectivity-check.service")
     machine.wait_for_unit("peer-observer-tool-addr-connectivity-check.service", timeout=15)
     machine.wait_for_open_port(${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT})
 
     # right after start up, the addr connectivity check metrics endpoint
-    # returns an empty response as no metrics have been set 
+    # returns an empty response as no metrics have been set
     metrics2 = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}/metrics")
     assert len(metrics2) == 0
 
