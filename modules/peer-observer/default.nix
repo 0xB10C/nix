@@ -101,6 +101,29 @@ in {
           };
         };
 
+        p2p = {
+          enable = mkEnableOption "peer-observer p2p-extractor";
+
+          network = mkOption {
+            type = types.enum ["mainnet" "testnet3" "testnet4" "signet" "regtest"];
+            default = "mainnet";
+            description = "Network the Bitcoin node";
+          };
+
+          p2pAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8444";
+            description = "Address the p2p-extractor listens on for connections from the Bitcoin node. Run the Bitcoin node with `--addnode=ip:port` to connect it to this address.";
+          };
+
+          extraArgs= mkOption {
+            type = types.str;
+            default = "";
+            example = "--ping-interval 20";
+            description = "Extra arguments to pass to the peer-observer p2p-extractor.";
+          };
+        };
+
       };
 
       tools = {
@@ -140,7 +163,7 @@ in {
 
     };
   };
-  config = mkIf (cfg.extractors.ebpf.enable || cfg.extractors.rpc.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable) {
+  config = mkIf (cfg.extractors.ebpf.enable || cfg.extractors.rpc.enable || cfg.extractors.p2p.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable) {
     users = {
       users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
       groups.peerobserver = { };
@@ -168,7 +191,7 @@ in {
       description = "peer-observer ebpf-extractor";
       wantedBy = [ "multi-user.target" ];
       after = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ];
-      wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ]; # 
+      wants = ["network-online.target" "${cfg.extractors.ebpf.dependsOn}.service" cfg.dependsOnNATSService ]; #
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.natsAddress} ${cfg.extractors.ebpf.extraArgs}";
@@ -199,10 +222,32 @@ in {
         description = "peer-observer rpc-extractor";
         wantedBy = [ "multi-user.target" ];
         after = ["network-online.target" "${cfg.extractors.rpc.dependsOn}.service" cfg.dependsOnNATSService ];
-        wants = ["network-online.target" "${cfg.extractors.rpc.dependsOn}.service" cfg.dependsOnNATSService ]; # 
+        wants = ["network-online.target" "${cfg.extractors.rpc.dependsOn}.service" cfg.dependsOnNATSService ]; #
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = "${cfg.package}/bin/rpc-extractor --rpc-host ${cfg.extractors.rpc.rpcHost} --rpc-user ${cfg.extractors.rpc.rpcUser} --rpc-password ${cfg.extractors.rpc.rpcPass} --nats-address ${cfg.natsAddress} ${cfg.extractors.rpc.extraArgs}";
+          Restart = "always";
+          # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          DynamicUser = true;
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+
+      systemd.services.peer-observer-p2p-extractor = mkIf cfg.extractors.p2p.enable {
+        description = "peer-observer p2p-extractor";
+        wantedBy = [ "multi-user.target" ];
+        # we don't depend on a Bitcoin service here. Ideally, we want the p2p-extractor to start before
+        # a bitcoind starts for the bitcoind to connect to the p2p-extractor right away. We don't enforce
+        # this as bitcoind will try to reconnect every minute.
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
+        startLimitIntervalSec = 120;
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+          ExecStart = "${cfg.package}/bin/p2p-extractor --p2p-network ${cfg.extractors.p2p.network} --p2p-address ${cfg.extractors.p2p.p2pAddress} --nats-address ${cfg.natsAddress} ${cfg.extractors.p2p.extraArgs}";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
