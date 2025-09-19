@@ -2,13 +2,13 @@
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
-  version = "c180a89ae49d297431cee49319a8849942d5f8a6";
+  version = "61c3f260a1bb65661ad71edcbae4ce51622877e5";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-n9bggz8gOh4PLFFk836JxqBd+Q+B5kM6fGIhCys/hhE=";
+    sha256 = "sha256-j30sJ0UB24Fv9T6PLXlWklYbWFGUtzdb/ItBXuryP/k=";
   };
 
   hardeningDisable = [
@@ -27,7 +27,7 @@ rustPlatform.buildRustPackage rec {
     pkgs.cmake
 
     # for building libbpf
-    pkgs.clang_14
+    pkgs.llvmPackages_20.clang-unwrapped
     pkgs.pkg-config
 
     # needed for libbpf-cargo
@@ -41,6 +41,10 @@ rustPlatform.buildRustPackage rec {
   # use the nix one instead
   BITCOIND_SKIP_DOWNLOAD = "1";
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+
+  # set the path of the Linux kernel headers. These are needed in
+  # build.rs of the ebpf-extractor on Nix.
+  KERNEL_HEADERS = "${pkgs.linuxHeaders}/include";
 
   cargoHash = "sha256-4eyttDdcCr2YuynLVOF3E11WxnmxZ5UNnl96Ekzkpvo=";
 
