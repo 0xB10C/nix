@@ -32,15 +32,18 @@ rustPlatform.buildRustPackage rec {
 
     # needed for libbpf-cargo
     pkgs.rustfmt
-
-    # needed for rust-bitcoin corepc-node tests
-    pkgs.bitcoind
   ];
 
   # during the integration tests, don't try to download a bitcoind binary
   # use the nix one instead
   BITCOIND_SKIP_DOWNLOAD = "1";
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+  # Overwrite the default `cargo check` with `cargo test --all-features`
+  # to run the integration tests.
+  checkPhase = ''
+    export NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server"
+    cargo test --all-features
+  '';
 
   # set the path of the Linux kernel headers. These are needed in
   # build.rs of the ebpf-extractor on Nix.
