@@ -2,13 +2,13 @@
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
-  version = "87823b767c74e60b23c9a150984c7001d245277b";
+  version = "76b1b583b0620834f856a0ce136d2924231d1820";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-7Hbjbk7klp+Oeq4EvPtxicALXo6IYGaxZXuSGtP35p8=";
+    sha256 = "sha256-RLUjpqQ0jvXX/XFkBviWC/4aN6xnQOPnPuiUN21K3uw=";
   };
 
   hardeningDisable = [
@@ -49,7 +49,7 @@ rustPlatform.buildRustPackage rec {
   # build.rs of the ebpf-extractor on Nix.
   KERNEL_HEADERS = "${pkgs.linuxHeaders}/include";
 
-  cargoHash = "sha256-8QjNC390LqAS7oh4kYG2Ql3FKhZ2fqP6TvxSG9F4RGc=";
+  cargoHash = "sha256-lpvLruvXXZNswHjtSUV/xRHst2QUlaPOh13Hsgc7qxc=";
 
   meta = with stdenv.lib; {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
