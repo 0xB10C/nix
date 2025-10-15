@@ -66,7 +66,9 @@ let
     [[networks]]
     id = ${toString network.id}
     name = "${network.name}"
-    description = "${network.description}"
+    description = """
+      ${network.description}\
+    """
     min_fork_height = ${toString network.minForkHeight}
     max_interesting_heights = ${toString network.maxInterestingHeights}
     [networks.pool_identification]
@@ -147,7 +149,9 @@ let
     [[networks.nodes]]
     id = ${toString node.id}
     name = "${node.name}"
-    description = "${node.description}"
+    description = """
+      ${node.description}\
+    """
     # TODO: rpc_cookie_file = "~/.bitcoin/.cookie"
     rpc_host = "${node.rpcHost}"
     rpc_port = ${toString node.rpcPort}

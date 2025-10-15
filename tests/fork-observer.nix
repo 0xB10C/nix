@@ -38,13 +38,20 @@ in {
       enable = true;
       databaseName = DB_NAME;
       queryInterval = 2;
-      footer = "nixos-test footer";
+      footer = ''
+        nixos-test footer
+        multi-line
+      '';
       rss_base_url = ADDRESS;
       networks = [
         {
           id = NETWORK_ID;
           name = "nixos-test-network";
-          description = "a test network";
+          description = ''
+            a test network
+            with a multi-line
+            description
+          '';
           minForkHeight = 0;
           maxInterestingHeights = 25;
           poolIdentification = {
@@ -54,7 +61,11 @@ in {
             {
               id = 567;
               name = "Node 567";
-              description = "This is a node.";
+              description = ''
+                This is a node with a
+                multi-line
+                description.
+              '';
               rpcPort = BITCOIND_RPC_PORT;
               rpcHost = "127.0.0.1";
               rpcUser = "fork-observer";
@@ -132,7 +143,10 @@ in {
     network = n["networks"][0]
     assert network["id"] == ${toString NETWORK_ID}
     assert network["name"] == "nixos-test-network"
-    assert network["description"] == "a test network"
+    assert network["description"] == """  a test network
+    with a multi-line
+    description
+    """
 
     data = machine.succeed("curl ${ADDRESS}/api/${toString NETWORK_ID}/data.json");
     print("data.json response:", data)
@@ -142,7 +156,10 @@ in {
     node = d["nodes"][0]
     assert node["id"] == 567
     assert node["name"] == "Node 567"
-    assert node["description"] == "This is a node."
+    assert node["description"] == """  This is a node with a
+    multi-line
+    description.
+    """
     assert node["implementation"] == "Bitcoin Core"
     assert node["reachable"]
     assert "Satoshi" in node["version"]
