@@ -2,7 +2,7 @@
 
 pkgs.rustPlatform.buildRustPackage rec {
   name = "github-metadata-backup";
-  version = "b5adba1de2794a1a7c362ad927b8b30502aac3bf";
+  version = "a6a0947023339076a89043d996ef75dabc679d78";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xb10c";
