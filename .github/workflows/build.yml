@@ -18,14 +18,14 @@ jobs:
       matrix:
         nixPath:
           - nixpkgs=channel:nixos-unstable
-          - nixpkgs=channel:nixos-25.05
+          - nixpkgs=channel:nixos-25.11
         runsOn:
           - ubuntu-latest
           - ubuntu-24.04-arm
     runs-on: "${{ matrix.runsOn }}"
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
     - name: Install nix
       uses: cachix/install-nix-action@v31
       with:
