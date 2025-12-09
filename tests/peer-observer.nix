@@ -88,16 +88,16 @@ in {
       dependsOnNATSService = "nats.service";
 
       extractors = {
+        dependOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service
+
         ebpf = {
           enable = true;
-          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service
           bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
           bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
         };
 
         rpc = {
           enable = true;
-          dependsOn = "bitcoind-regtest"; # services.bitcoind.regtest above will create the bitcoind-regtest.service
           rpcHost = "127.0.0.1:${toString BITCOIND_RPC_PORT}";
           rpcUser = "peer-observer";
           rpcPass = "hunter2";
@@ -108,6 +108,11 @@ in {
           p2pAddress = "127.0.0.1:${toString PEER_OBSERVER_P2PEXPORTER_PORT}";
           network = "regtest";
           extraArgs = "--ping-interval 2 --log-level TRACE";
+        };
+
+        log = {
+          enable = true;
+          debugLog = "/var/lib/bitcoind-regtest/regtest/debug.log";
         };
       };
 
@@ -145,6 +150,8 @@ in {
     machine.wait_for_unit("peer-observer-rpc-extractor.service", timeout=15)
     machine.wait_for_unit("peer-observer-p2p-extractor.service", timeout=15)
     machine.wait_for_open_port(${toString PEER_OBSERVER_P2PEXPORTER_PORT})
+    machine.wait_for_unit("peer-observer-log-extractor-fifo-pipe.service", timeout=15)
+    machine.wait_for_unit("peer-observer-log-extractor.service", timeout=15)
 
     # give the extractor a bit of time to start up
     time.sleep(5)
@@ -167,6 +174,11 @@ in {
     print("to test the p2p-extractor, check if the peerobserver_p2pextractor_ping_duration_nanoseconds metric is in there and that the value isn't zero:")
     assert "peerobserver_p2pextractor_ping_duration_nanoseconds" in metrics
     assert "peerobserver_p2pextractor_ping_duration_nanoseconds 0" not in metrics
+    print("OK!")
+
+    print("to test the log-extractor, check if the peerobserver_log_events metric is in there and that the value isn't zero:")
+    assert "peerobserver_log_events" in metrics
+    assert "peerobserver_log_events 0" not in metrics
     print("OK!")
 
     machine.systemctl("start peer-observer-tool-addr-connectivity-check.service")
