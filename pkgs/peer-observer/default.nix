@@ -2,13 +2,13 @@
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
-  version = "3b4b0914248a14679bb1037f22f8fdbe68e5d625";
+  version = "56e5521e94a506b85ba211f903fd6d6bb6f39988";
 
   src = pkgs.fetchFromGitHub {
-    owner = "0xB10C";
+    owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-vlchyIwu4hGb6Am9L7VKe55co5TF7nLqeoiTG1Np6zg=";
+    sha256 = "sha256-0hTZrmDaqzuvcGGQ9Piw1NraAz9tcEXweTKtctfTYJY=";
   };
 
   hardeningDisable = [
