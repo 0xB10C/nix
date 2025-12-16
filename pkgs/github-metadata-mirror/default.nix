@@ -2,6 +2,7 @@
 
 stdenv.mkDerivation rec {
   name = "github-metadata-mirror";
+  pname = "github-metadata-mirror";
   version = "d392dc0792686c1b022f7697f54e8b94440cc62d";
   
   src = pkgs.fetchFromGitHub {
