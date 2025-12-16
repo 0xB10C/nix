@@ -2,6 +2,7 @@
 
 pkgs.rustPlatform.buildRustPackage rec {
   name = "github-metadata-backup";
+  pname = "github-metadata-backup";
   version = "7ba9de2d3082e76a1a9dab711fc3b6df71ce2246";
 
   src = pkgs.fetchFromGitHub {

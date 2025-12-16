@@ -2,6 +2,7 @@
 
 stdenv.mkDerivation rec {
   name = "asmap-data";
+  pname = "asmap-data";
   version = "d65f37e8e0a31cbd5348213c861d5c48c72e7402";
   
   src = pkgs.fetchFromGitHub {

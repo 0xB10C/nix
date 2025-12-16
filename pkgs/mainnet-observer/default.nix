@@ -36,6 +36,7 @@ in {
   frontend = { title, baseURL, htmlTopRight, htmlBottomRight }:
     stdenv.mkDerivation {
       name = "mainnet-observer-frontend";
+      pname = "mainnet-observer-frontend";
 
       inherit version src;
 

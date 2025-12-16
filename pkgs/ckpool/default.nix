@@ -3,6 +3,7 @@
 
 stdenv.mkDerivation rec {
   pname = "ckpool";
+  name = "ckpool";
   version = "v0.9.9";
 
   src = pkgs.fetchFromBitbucket {
