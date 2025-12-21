@@ -25,7 +25,7 @@ in {
 
     services.bitcoind."regtest" = {
       enable = true;
-      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v29;
+      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v30;
       port = BITCOIND_PORT;
       # needs to be "/run/bitcoind-<name>/bitcoind.pid"
       pidFile = "/run/bitcoind-regtest/bitcoind.pid";

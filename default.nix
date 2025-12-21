@@ -5,6 +5,7 @@
   asmap-data = pkgs.callPackage ./pkgs/asmap-data { };
   bitcoind-tracing-v28 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v28.0"; };
   bitcoind-tracing-v29 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v29.0"; useCmake = true; };
+  bitcoind-tracing-v30 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v30.0"; useCmake = true; };
   ckpool = pkgs.callPackage ./pkgs/ckpool { };
   discourse-archive = pkgs.callPackage ./pkgs/discourse-archive { };
   fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
