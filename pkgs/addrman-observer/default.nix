@@ -3,13 +3,13 @@
 rustPlatform.buildRustPackage rec {
   pname = "addrman-observer-proxy";
   name = "addrman-observer-proxy";
-  version = "893144c16f0a0837a536f5ba639fb4ef2eef67aa";
+  version = "6c673887b6d5ed3c3a390ea569ac61fd587a739a";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "addrman-observer";
     rev = version;
-    sha256 = "sha256-t0CzVT+g3p3vkmGGkkHMkTpUXCScjYaLbWbnpeQRHwM=";
+    sha256 = "sha256-leqwkcq5ZJu3VL+XbMOdDr7vek7B4MKOCtctzeeFqUw=";
   };
 
   sourceRoot = "source/proxy";
