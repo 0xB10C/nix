@@ -7,12 +7,15 @@
 , boost
 , libevent
 , libsystemtap
+, capnproto
 , version
 , useCmake ? false
 , ...
 }:
 
-
+let
+  needsCapnp = lib.versionAtLeast (lib.removePrefix "v" version) "30.0";
+in
 stdenv.mkDerivation rec {
   pname = "bitcoind-${version}";
   name = "bitcoind-${version}";
@@ -31,6 +34,7 @@ stdenv.mkDerivation rec {
       "v27.2" = "sha256-E0+3tON+uIkqN+QEmZZSEfDCDcCdYtJjfhcDFYs1zH4=";
       "v28.0" = "sha256-LLtw6pMyqIJ3IWHiK4P3XoifLojB9yMNMo+MGNFGuRY=";
       "v29.0" = "sha256-XvoqYA5RYXbOjeidxV4Wxb8DhYv6Hz510XNMhmWkV1Y=";
+      "v30.0" = "sha256-2I6ndH9B4bAgcbJzMpMrns2ZGaXSL8hgucjNs43Qpkk=";
     }.${version} or (builtins.trace "Bitcoin Core using dummy vendor SHA256" "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   };
 
@@ -38,7 +42,7 @@ stdenv.mkDerivation rec {
     pkg-config
     (if useCmake then cmake else autoreconfHook)
     libsystemtap
-  ];
+  ] ++ lib.optionals needsCapnp [ capnproto ];
   buildInputs = [ boost libevent libsystemtap ];
 
   cmakeFlags = if useCmake then [
