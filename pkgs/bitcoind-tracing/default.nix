@@ -34,7 +34,7 @@ stdenv.mkDerivation rec {
     }.${version} or (builtins.trace "Bitcoin Core using dummy vendor SHA256" "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   };
 
-  nativeBuildInputs = [ 
+  nativeBuildInputs = [
     pkg-config
     (if useCmake then cmake else autoreconfHook)
     libsystemtap
@@ -61,8 +61,11 @@ stdenv.mkDerivation rec {
     "--disable-tests"
     "--enable-fuzz-binary=no"
     "--enable-ebpf"
-  ];
-  
+  ]
+  # New compiler versions error on known bugs in old Bitcoin Core versions.
+  # We silence these here.
+  ++ lib.optional (builtins.elem version ["v23.2" "v24.2"]) "CXXFLAGS=-Wno-error=unused-result";
+
   doCheck = false;
   enableParallelBuilding = true;
 }
