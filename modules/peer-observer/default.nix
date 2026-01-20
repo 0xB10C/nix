@@ -6,6 +6,46 @@ let
   pkg = (pkgs.callPackage ../.. {}).peer-observer;
   cfg = config.services.peer-observer;
   hardening = import ../hardening.nix;
+
+  natsOptions = {
+    options = {
+      address = mkOption {
+        type = types.str;
+        default = "127.0.0.1:4222";
+        example = "nats.example.com:4333";
+        description = "The NATS server address the extractors and tools connect to.";
+      };
+
+      username = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "satoshi";
+        description = "The username needed to connect to the NATS server.";
+      };
+
+      password = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "passw0rd";
+        description = "The password needed to connect to the NATS server.";
+      };
+
+      passwordFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        example = "/run/secrets/nats-password";
+        description = "The password needed to connect to the NATS server.";
+      };
+    };
+
+  };
+
+  natsOpt = mkOption {
+    default = { };
+    type = types.submodule natsOptions;
+    description = "Configuration for the connection to the NATS server.";
+  };
+
 in {
 
   options = {
@@ -17,13 +57,6 @@ in {
         default = pkg;
         defaultText = "pkgs.peer-observer";
         description = ''The peer-observer package to use.'';
-      };
-
-      natsAddress = mkOption {
-        type = types.str;
-        default = "127.0.0.1:4222";
-        example = "127.0.0.1:4222";
-        description = "Address of the NATS server the extractors and tools connect to.";
       };
 
       dependsOnNATSService = mkOption {
@@ -56,6 +89,8 @@ in {
             description = "The path to the bitcoind PID file. This file is read by systemd during extractor startup.";
           };
 
+          nats = natsOpt;
+
           extraArgs= mkOption {
             type = types.str;
             default = "";
@@ -85,6 +120,8 @@ in {
             description = "RPC password";
           };
 
+          nats = natsOpt;
+
           extraArgs= mkOption {
             type = types.str;
             default = "";
@@ -108,6 +145,8 @@ in {
             description = "Address the p2p-extractor listens on for connections from the Bitcoin node. Run the Bitcoin node with `--addnode=ip:port` to connect it to this address.";
           };
 
+          nats = natsOpt;
+
           extraArgs= mkOption {
             type = types.str;
             default = "";
@@ -125,6 +164,8 @@ in {
             description = "Path to the bitcoind debug.log file";
           };
 
+          nats = natsOpt;
+
           extraArgs= mkOption {
             type = types.str;
             default = "";
@@ -140,6 +181,8 @@ in {
         metrics = {
           enable = mkEnableOption "prometheus metrics";
 
+          nats = natsOpt;
+
           metricsAddress = mkOption {
             type = types.str;
             default = "127.0.0.1:8282";
@@ -151,6 +194,8 @@ in {
         addrConnectivity = {
           enable = mkEnableOption "addr connectivity lookup";
 
+          nats = natsOpt;
+
           metricsAddress = mkOption {
             type = types.str;
             default = "127.0.0.1:8282";
@@ -161,6 +206,8 @@ in {
 
         websocket = {
           enable = mkEnableOption "websocket tool";
+
+          nats = natsOpt;
 
           websocketAddress = mkOption {
             type = types.str;
@@ -204,7 +251,16 @@ in {
       wants = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ]; #
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/ebpf-extractor --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} --libbpf-debug --nats-address ${cfg.natsAddress} ${cfg.extractors.ebpf.extraArgs}";
+          ExecStart = ''
+            ${cfg.package}/bin/ebpf-extractor \
+            --bitcoind-path ${cfg.extractors.ebpf.bitcoindPath} \
+            --bitcoind-pid-file ${cfg.extractors.ebpf.bitcoindPIDFile} \
+            --libbpf-debug \
+            --nats-address ${cfg.extractors.ebpf.nats.address} \
+            ${optionalString (cfg.extractors.ebpf.nats.username != null) "--nats-username ${cfg.extractors.ebpf.nats.username}" } \
+            ${optionalString (cfg.extractors.ebpf.nats.password != null) "--nats-password ${cfg.extractors.ebpf.nats.password}" } \
+            ${optionalString (cfg.extractors.ebpf.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.ebpf.nats.passwordFile}" } \
+            ${cfg.extractors.ebpf.extraArgs}'';
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -235,7 +291,17 @@ in {
         wants = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ]; #
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/rpc-extractor --rpc-host ${cfg.extractors.rpc.rpcHost} --rpc-user ${cfg.extractors.rpc.rpcUser} --rpc-password ${cfg.extractors.rpc.rpcPass} --nats-address ${cfg.natsAddress} ${cfg.extractors.rpc.extraArgs}";
+          ExecStart = ''
+            ${cfg.package}/bin/rpc-extractor \
+            --rpc-host ${cfg.extractors.rpc.rpcHost} \
+            --rpc-user ${cfg.extractors.rpc.rpcUser} \
+            --rpc-password ${cfg.extractors.rpc.rpcPass} \
+            --nats-address ${cfg.extractors.rpc.nats.address} \
+            ${optionalString (cfg.extractors.rpc.nats.username != null) "--nats-username ${cfg.extractors.rpc.nats.username}" } \
+            ${optionalString (cfg.extractors.rpc.nats.password != null) "--nats-password ${cfg.extractors.rpc.nats.password}" } \
+            ${optionalString (cfg.extractors.rpc.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.rpc.nats.passwordFile}" } \
+            ${cfg.extractors.rpc.extraArgs}
+          '';
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -257,7 +323,15 @@ in {
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/p2p-extractor --p2p-network ${cfg.extractors.p2p.network} --p2p-address ${cfg.extractors.p2p.p2pAddress} --nats-address ${cfg.natsAddress} ${cfg.extractors.p2p.extraArgs}";
+          ExecStart = ''
+            ${cfg.package}/bin/p2p-extractor \
+            --p2p-network ${cfg.extractors.p2p.network} \
+            --p2p-address ${cfg.extractors.p2p.p2pAddress} \
+            --nats-address ${cfg.extractors.p2p.nats.address} \
+            ${optionalString (cfg.extractors.p2p.nats.username != null) "--nats-username ${cfg.extractors.p2p.nats.username}" } \
+            ${optionalString (cfg.extractors.p2p.nats.password != null) "--nats-password ${cfg.extractors.p2p.nats.password}" } \
+            ${optionalString (cfg.extractors.p2p.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.p2p.nats.passwordFile}" } \
+            ${cfg.extractors.p2p.extraArgs}'';
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -303,7 +377,15 @@ in {
         wants = ["network-online.target" cfg.dependsOnNATSService "peer-observer-log-extractor-fifo-pipe.service"];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/log-extractor --bitcoind-pipe /var/lib/peer-observer/log-extractor-debug-log.pipe --nats-address ${cfg.natsAddress} ${cfg.extractors.log.extraArgs}";
+          ExecStart = ''
+            ${cfg.package}/bin/log-extractor \
+            --bitcoind-pipe /var/lib/peer-observer/log-extractor-debug-log.pipe \
+            --nats-address ${cfg.extractors.log.nats.address} \
+            ${optionalString (cfg.extractors.log.nats.username != null) "--nats-username ${cfg.extractors.log.nats.username}" } \
+            ${optionalString (cfg.extractors.log.nats.password != null) "--nats-password ${cfg.extractors.log.nats.password}" } \
+            ${optionalString (cfg.extractors.log.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.log.nats.passwordFile}" } \
+            ${cfg.extractors.log.extraArgs}
+          '';
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
@@ -324,7 +406,14 @@ in {
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/metrics --nats-address ${cfg.natsAddress} --metrics-address ${cfg.tools.metrics.metricsAddress}";
+          ExecStart = ''
+            ${cfg.package}/bin/metrics \
+            --nats-address ${cfg.tools.metrics.nats.address} \
+            --metrics-address ${cfg.tools.metrics.metricsAddress} \
+            ${optionalString (cfg.tools.metrics.nats.username != null) "--nats-username ${cfg.tools.metrics.nats.username}" } \
+            ${optionalString (cfg.tools.metrics.nats.password != null) "--nats-password ${cfg.tools.metrics.nats.password}" } \
+            ${optionalString (cfg.tools.metrics.nats.passwordFile != null) "--nats-password-file ${cfg.tools.metrics.nats.passwordFile}" }
+          '';
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -347,7 +436,14 @@ in {
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/connectivity-check --nats-address ${cfg.natsAddress} --metrics-address ${cfg.tools.addrConnectivity.metricsAddress}";
+          ExecStart = ''
+            ${cfg.package}/bin/connectivity-check \
+            --metrics-address ${cfg.tools.addrConnectivity.metricsAddress} \
+            --nats-address ${cfg.tools.addrConnectivity.nats.address} \
+            ${optionalString (cfg.tools.addrConnectivity.nats.username != null) "--nats-username ${cfg.tools.addrConnectivity.nats.username}" } \
+            ${optionalString (cfg.tools.addrConnectivity.nats.password != null) "--nats-password ${cfg.tools.addrConnectivity.nats.password}" } \
+            ${optionalString (cfg.tools.addrConnectivity.nats.passwordFile != null) "--nats-password-file ${cfg.tools.addrConnectivity.nats.passwordFile}" }
+          '';
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
@@ -372,7 +468,14 @@ in {
         wants = ["network-online.target" cfg.dependsOnNATSService ];
         startLimitIntervalSec = 120;
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = "${cfg.package}/bin/websocket --nats-address ${cfg.natsAddress} --websocket-address ${cfg.tools.websocket.websocketAddress}";
+          ExecStart = ''
+            ${cfg.package}/bin/websocket \
+            --websocket-address ${cfg.tools.websocket.websocketAddress} \
+            --nats-address ${cfg.tools.websocket.nats.address} \
+            ${optionalString (cfg.tools.websocket.nats.username != null) "--nats-username ${cfg.tools.websocket.nats.username}" } \
+            ${optionalString (cfg.tools.websocket.nats.password != null) "--nats-password ${cfg.tools.websocket.nats.password}" } \
+            ${optionalString (cfg.tools.websocket.nats.passwordFile != null) "--nats-password-file ${cfg.tools.websocket.nats.passwordFile}" }
+          '';
           Environment = "RUST_LOG=info";
           Restart = "always";
           # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
