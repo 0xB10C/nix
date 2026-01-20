@@ -71,10 +71,27 @@ in {
       '';
     };
 
+    # The password will be world-readable in the /nix/store.
+    # This is fine for tests, but use proper secret management in prod!
+    environment.etc.nats-extractor-password = {
+      text = "1234";
+    };
+
     services.nats = {
       enable = true;
       settings = {
         listen = "127.0.0.1:${toString NATS_PORT}";
+        authorization = {
+          users = [
+            # can publish
+            { user = "peerobserver-extractor"; password = "1234"; permissions = { publish = { allow = ">"; }; subscribe = { deny = ">"; }; }; }
+            # can subscribe
+            { user = "peerobserver-tool"; password = "2345"; permissions = { publish = { deny = ">"; }; subscribe = { allow = ">"; }; }; }
+            # can't subscribe nor publish
+            { user = "nobody"; password = "2345"; permissions = { publish = { deny = ">"; }; subscribe = { deny = ">"; }; }; }
+          ];
+        };
+        no_auth_user = "nobody";
       };
     };
 
@@ -84,7 +101,6 @@ in {
     systemd.services.peer-observer-extractor.serviceConfig.Environment = "RUST_LOG=debug";
     services.peer-observer = {
 
-      natsAddress = "127.0.0.1:${toString NATS_PORT}";
       dependsOnNATSService = "nats.service";
 
       extractors = {
@@ -94,6 +110,11 @@ in {
           enable = true;
           bitcoindPath = "${config.services.bitcoind.regtest.package}/bin/bitcoind";
           bitcoindPIDFile = config.services.bitcoind.regtest.pidFile;
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-extractor";
+            password = "1234";
+          };
         };
 
         rpc = {
@@ -101,6 +122,11 @@ in {
           rpcHost = "127.0.0.1:${toString BITCOIND_RPC_PORT}";
           rpcUser = "peer-observer";
           rpcPass = "hunter2";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-extractor";
+            password = "1234";
+          };
         };
 
         p2p = {
@@ -108,11 +134,21 @@ in {
           p2pAddress = "127.0.0.1:${toString PEER_OBSERVER_P2PEXPORTER_PORT}";
           network = "regtest";
           extraArgs = "--ping-interval 2 --log-level TRACE";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-extractor";
+            passwordFile = "/etc/nats-extractor-password";
+          };
         };
 
         log = {
           enable = true;
           debugLog = "/var/lib/bitcoind-regtest/regtest/debug.log";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-extractor";
+            passwordFile = "/etc/nats-extractor-password";
+          };
         };
       };
 
@@ -120,16 +156,31 @@ in {
         metrics = {
           enable = true;
           metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_METRICS_PORT}";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-tool";
+            password = "2345";
+          };
         };
 
         addrConnectivity = {
           enable = true;
           metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-tool";
+            password = "2345";
+          };
         };
 
         websocket = {
           enable = true;
           websocketAddress = "127.0.0.1:${toString PEER_OBSERVER_WEBSOCKET_PORT}";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-tool";
+            password = "2345";
+          };
         };
       };
     };
