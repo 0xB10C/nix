@@ -1,6 +1,7 @@
 {
   addrman-observer = ./addrman-observer;
   ckpool = ./ckpool;
+  discourse-archive = ./discourse-archive;
   fork-observer = ./fork-observer;
   github-metadata-backup = ./github-metadata-backup;
   github-metadata-mirror = ./github-metadata-mirror;
