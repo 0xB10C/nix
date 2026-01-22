@@ -56,6 +56,7 @@
       checks = forAllSystems (system: {
         asmap-data = mkTest [ ./tests/asmap-data.nix ] system;
         ckpool = mkTest [ ./tests/ckpool.nix ] system;
+        discourse-archive = mkTest [ ./tests/discourse-archive.nix ] system;
         stratum-observer = mkTest [ ./tests/stratum-observer.nix ] system;
         addrman-observer = mkTest [ ./tests/addrman-observer.nix ] system;
         peer-observer = mkTest [ ./tests/peer-observer.nix ] system;
