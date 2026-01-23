@@ -6,6 +6,7 @@
   bitcoind-tracing-v28 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v28.0"; };
   bitcoind-tracing-v29 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v29.0"; useCmake = true; };
   ckpool = pkgs.callPackage ./pkgs/ckpool { };
+  discourse-archive = pkgs.callPackage ./pkgs/discourse-archive { };
   fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
   github-metadata-backup = pkgs.callPackage ./pkgs/github-metadata-backup { };
   github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
