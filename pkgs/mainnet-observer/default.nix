@@ -1,12 +1,12 @@
 { stdenv, pkgs, lib, rustPlatform, ... }:
 
 let
-  version = "28a04365aa380cf090c63685ace6df620085377e";
+  version = "fae50640df1b6d966ae361bfb03e470675ebb4d7";
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "mainnet-observer";
     rev = version;
-    sha256 = "sha256-V0nBwxyb+Q8V6Xb/eFi7MCJb2Fea2h1oVIv/flgPHeM=";
+    sha256 = "sha256-uIOA+PulC2+RCeDrUzrVx5Y7t36ynL899QdqtyDBbrw=";
   };
 in {
   backend = rustPlatform.buildRustPackage rec {
