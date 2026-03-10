@@ -10,6 +10,7 @@
 , capnproto
 , version
 , useCmake ? false
+, enableTracing ? stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isStatic
 , ...
 }:
 
@@ -35,15 +36,18 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = [
     pkg-config
     (if useCmake then cmake else autoreconfHook)
-    libsystemtap
-  ] ++ lib.optionals needsCapnp [ capnproto ];
-  buildInputs = [ boost libevent libsystemtap ];
+  ] ++ lib.optionals needsCapnp [ capnproto ]
+    ++ lib.optionals enableTracing [ libsystemtap ];
+  buildInputs = [
+    boost
+    libevent
+  ] ++ lib.optionals enableTracing [ libsystemtap ];
 
   cmakeFlags = if useCmake then [
     (lib.cmakeBool "BUILD_BENCH" false)
     (lib.cmakeBool "WITH_ZMQ" false)
     (lib.cmakeBool "WITH_BDB" false)
-    (lib.cmakeBool "WITH_USDT" true)
+    (lib.cmakeBool "WITH_USDT" enableTracing)
     (lib.cmakeBool "BUILD_TESTS" false)
     (lib.cmakeBool "BUILD_FUZZ_BINARY" false)
     (lib.cmakeBool "BUILD_GUI_TESTS" false)
@@ -58,8 +62,7 @@ stdenv.mkDerivation rec {
     "--disable-bench"
     "--disable-tests"
     "--enable-fuzz-binary=no"
-    "--enable-ebpf"
-  ];
+  ] ++ lib.optionals enableTracing [ "--enable-ebpf" ];
 
   doCheck = false;
   enableParallelBuilding = true;
