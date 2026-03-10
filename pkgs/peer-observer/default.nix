@@ -1,4 +1,10 @@
-{ stdenv, pkgs, rustPlatform, ... }:
+{ stdenv
+, lib
+, pkgs
+, rustPlatform
+, enableTracing ? stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isStatic
+, ...
+}:
 
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
@@ -17,42 +23,45 @@ rustPlatform.buildRustPackage rec {
     "fortify"
   ];
 
-  buildInputs = [
-    # for building libbpf
-    pkgs.elfutils
-    pkgs.zlib
+  buildInputs = with pkgs; [
+    zlib
+  ] ++ lib.optionals enableTracing [
+    elfutils
   ];
 
-  nativeBuildInputs = [
-    pkgs.protobuf
-    pkgs.cmake
-
-    # for building libbpf
-    pkgs.llvmPackages_20.clang-unwrapped
-    pkgs.pkg-config
-
-    # needed for libbpf-cargo
-    pkgs.rustfmt
+  nativeBuildInputs = with pkgs; [
+    protobuf
+    cmake
+  ] ++ lib.optionals enableTracing [
+    llvmPackages_20.clang-unwrapped
+    pkg-config
+    rustfmt
   ];
 
-  # during the integration tests, don't try to download a bitcoind binary
-  # use the nix one instead
-  BITCOIND_SKIP_DOWNLOAD = "1";
-  BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
-  # Overwrite the default `cargo check` with `cargo test --all-features`
-  # to run the integration tests.
-  checkPhase = ''
-    export NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server"
-    cargo test --all-features
-  '';
+  cargoBuildFlags = lib.optionals (!enableTracing) [
+      "--workspace --exclude ebpf-extractor"
+  ];
 
-  # set the path of the Linux kernel headers. These are needed in
-  # build.rs of the ebpf-extractor on Nix.
-  KERNEL_HEADERS = "${pkgs.linuxHeaders}/include";
+  cargoTestFlags = [
+    "--all-features"
+  ] ++ lib.optionals (!enableTracing) [
+      "--workspace --exclude ebpf-extractor"
+  ] ++ lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [
+      "--exclude log-extractor"
+  ];
 
   cargoHash = "sha256-eJFW1gX2RKdVE73t1VxhyfPO9oz+tqHrAfFASNbySoY=";
 
-  meta = with stdenv.lib; {
+  # Set the path of the Linux kernel headers for the ebpf-extractor.
+  KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing 
+    "${pkgs.linuxHeaders}/include";
+
+  # In the integration tests, use the nix bitcoind and nats binaries.
+  BITCOIND_SKIP_DOWNLOAD = "1";
+  BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+  NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server";
+
+  meta = {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
   };
 
