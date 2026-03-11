@@ -120,6 +120,13 @@ in {
             description = "RPC password";
           };
 
+          metricsAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8285";
+            example = "127.0.0.1:8285";
+            description = "Address the rpc-extractor metrics webserver should listen on.";
+          };
+
           nats = natsOpt;
 
           extraArgs= mkOption {
@@ -300,6 +307,7 @@ in {
             ${optionalString (cfg.extractors.rpc.nats.username != null) "--nats-username ${cfg.extractors.rpc.nats.username}" } \
             ${optionalString (cfg.extractors.rpc.nats.password != null) "--nats-password ${cfg.extractors.rpc.nats.password}" } \
             ${optionalString (cfg.extractors.rpc.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.rpc.nats.passwordFile}" } \
+            --prometheus-address ${cfg.extractors.rpc.metricsAddress} \
             ${cfg.extractors.rpc.extraArgs}
           '';
           Restart = "always";
