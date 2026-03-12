@@ -14,8 +14,6 @@ pkgs.rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-gG+7DJFgC4PvmeM8ccXCFBE4G+chRc7Uymrl2WsWrNU=";
 
-  useFetchCargoVendor = true;
-
   meta = {
     description = ''
       Download issues and pull-requests from the GitHub API and
