@@ -22,12 +22,15 @@ jobs:
         runsOn:
           - ubuntu-latest
           - ubuntu-24.04-arm
+          - macos-26-intel
+          - macos-26
     runs-on: "${{ matrix.runsOn }}"
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
     - run: df -h
     - name: free up disk space
+      if: ${{ !startsWith(matrix.runsOn, 'macos-') }}
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo docker image prune --all --force
