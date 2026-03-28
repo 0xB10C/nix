@@ -10,7 +10,7 @@ python3.pkgs.buildPythonPackage rec {
   pyproject = true;
 
   src = fetchFromGitHub {
-    owner = "jamesob";
+    owner = "0xB10C";
     repo = "discourse-archive";
     rev = version;
     hash = "sha256-1vpasjmp327vv8Cj883gYtxZmzRiKkPkCaw+F+sYgEM=";
