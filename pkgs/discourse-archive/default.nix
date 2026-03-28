@@ -5,7 +5,7 @@
 
 python3.pkgs.buildPythonPackage rec {
   pname = "discourse-archive";
-  version = "01e298b049d0b6002280cdb67ffe770d58fcd161";
+  version = "2360cd36a6da1b298d173d217947660624cf341e";
 
   pyproject = true;
 
@@ -13,7 +13,7 @@ python3.pkgs.buildPythonPackage rec {
     owner = "0xB10C";
     repo = "discourse-archive";
     rev = version;
-    hash = "sha256-1vpasjmp327vv8Cj883gYtxZmzRiKkPkCaw+F+sYgEM=";
+    hash = "sha256-U8BNWdJuyYA4efpkvfzL1tbWNmac+5E+bqzku7F1QhE=";
   };
 
   build-system = with python3.pkgs; [
