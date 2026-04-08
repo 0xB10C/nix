@@ -3,13 +3,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "a59832e1af2e022627ed038867ec370ddca0f46b";
+  version = "afc61e672236c775bef21d0039a6ca0d792356ba";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-qpRC+mqG4xe2l0BCFmySnJE6hezINOXC1+Rcmoj/Gbs=";
+    sha256 = "sha256-p9agDzhTkVRfeoBzKMDTX+fPEJs470spvFOBdUv883Y=";
   };
 
   hardeningDisable = [
@@ -21,6 +21,7 @@ rustPlatform.buildRustPackage rec {
     # for building libbpf
     pkgs.elfutils
     pkgs.zlib
+    pkgs.gitFull
   ];
 
   nativeBuildInputs = [
@@ -33,6 +34,8 @@ rustPlatform.buildRustPackage rec {
 
     # needed for libbpf-cargo
     pkgs.rustfmt
+
+    pkgs.gitFull
   ];
 
   # during the integration tests, don't try to download a bitcoind binary
