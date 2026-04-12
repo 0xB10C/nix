@@ -63,6 +63,7 @@
         mainnet-observer = mkTest [ ./tests/mainnet-observer.nix ] system;
         fork-observer = mkTest [ ./tests/fork-observer.nix ] system;
         miningpool-observer = mkTest [ ./tests/miningpool-observer.nix ] system;
+        github-metadata-mirror = mkTest [ ./tests/github-metadata-mirror.nix ] system;
       });
 
     };
