@@ -132,6 +132,7 @@ in {
             ${optionalString (instanceCfg.siteFooter != "") "--footer ${escapeShellArg instanceCfg.siteFooter}"}
 
           echo "Deploying to ${cfg.wwwDir}/${instanceName}"
+          chmod -R u+w "$WORK_DIR/public"
           mkdir -p ${cfg.wwwDir}/${instanceName}
           rm -rf ${cfg.wwwDir}/${instanceName}/*
           mv "$WORK_DIR/public"/* ${cfg.wwwDir}/${instanceName}
