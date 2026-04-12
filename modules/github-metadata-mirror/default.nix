@@ -20,46 +20,38 @@ let
       compressBackup = mkOption {
         type = types.bool;
         default = true;
-        description = lib.mkDoc "Whether to store a compressed copy of the backup in the `wwwDir`.";
+        description = lib.mdDoc "Whether to store a compressed copy of the backup in the `wwwDir`.";
       };
 
       siteName = mkOption {
         type = types.str;
         default = "GitHub Mirror";
-        description = lib.mdDoc "The hugo site name. This is displayed as title on the site.";
+        description = lib.mdDoc "The site title displayed in the navigation bar.";
       };
 
       siteBaseURL = mkOption {
         type = types.str;
         example = "https://example.com/my-github-metadata-mirror";
-        description = lib.mdDoc "The hugo site base URL. This is passed to hugo with the '--baseURL' flag";
+        description = lib.mdDoc "The base URL path passed to build.py with --base-url.";
       };
 
       siteFooter = mkOption {
         type = types.str;
         example = "This site is hosted by 0xB10C.";
-        default = "This site is hosted by PLACEHOLDER.";
-        description = lib.mkDoc "Footer shown in the bottom right. HTML is supported.";
+        default = "";
+        description = lib.mdDoc "Footer HTML shown on every page. HTML is supported.";
       };
 
       owner = mkOption {
         type = types.str;
         example = "bitcoin";
-        default = null;
-        description = lib.mkDoc "Owner of the mirrored repository on GitHub. Used to link to GitHub: https://github.com/<owner>/<repository>";
+        description = lib.mdDoc "Owner of the mirrored repository on GitHub.";
       };
 
       repository = mkOption {
         type = types.str;
         example = "bitcoin";
-        default = null;
-        description = lib.mkDoc "Name of the mirrored repository on GitHub. Used to link to GitHub: https://github.com/<owner>/<repository>";
-      };
-
-      goMaxProcs = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = lib.mdDoc "If set, setting the GOMAXPROCS env variable to the value. Can be used to limit the numer of CPUs hugo uses when generating pages.";
+        description = lib.mdDoc "Name of the mirrored repository on GitHub.";
       };
 
       timerOnCalendar = mkOption {
@@ -68,7 +60,6 @@ let
         description = lib.mdDoc
           "Systemd OnCalendar interval in which the mirror build and deploy job should run.";
       };
-
     };
   };
 in {
@@ -85,7 +76,7 @@ in {
         type = types.str;
         default = "github-metadata-backup";
         description =
-          lib.mdDoc "The user as which to run the github-metadata-mirror tool";
+          lib.mdDoc "The user as which to run the github-metadata-mirror tool.";
       };
 
       group = mkOption {
@@ -98,13 +89,13 @@ in {
       wwwDir = mkOption {
         type = types.path;
         default = "/var/www/github-metadata-mirror";
-        description = lib.mdDoc "The parent directory of the directory where to generate the HTML files to.";
+        description = lib.mdDoc "Parent directory where the generated HTML files are placed.";
       };
 
       package = mkOption {
         type = types.package;
         default = package;
-        description = lib.mdDoc "The package providing the github-metadata-mirror binary.";
+        description = lib.mdDoc "The package providing the github-metadata-mirror tool.";
       };
     };
   };
@@ -118,7 +109,7 @@ in {
         script = ''
           set -e
 
-          WORK_DIR=`mktemp -d -t "github-metadata-mirror-XXXXXXXX"`
+          WORK_DIR=$(mktemp -d -t "github-metadata-mirror-XXXXXXXX")
           if [[ ! "$WORK_DIR" || ! -d "$WORK_DIR" ]]; then
             echo "Could not create a temporary directory $WORK_DIR"
             exit 1
@@ -130,31 +121,30 @@ in {
           }
           trap cleanup EXIT
 
-          echo "copy the github-metadata-mirror package contents from ${cfg.package} to $WORK_DIR"
-          cp --recursive --no-preserve=ownership,mode ${cfg.package}/* $WORK_DIR
+          echo "Building site from backup at ${instanceCfg.backup}"
+          ${cfg.package}/bin/github-metadata-mirror \
+            --input ${instanceCfg.backup} \
+            --output "$WORK_DIR/public" \
+            --title ${escapeShellArg instanceCfg.siteName} \
+            --owner ${escapeShellArg instanceCfg.owner} \
+            --repository ${escapeShellArg instanceCfg.repository} \
+            --base-url ${escapeShellArg instanceCfg.siteBaseURL} \
+            ${optionalString (instanceCfg.siteFooter != "") "--footer ${escapeShellArg instanceCfg.siteFooter}"}
 
-          echo "generate the issue and pull markdown files to the hugo content and data directories from the backup files in ${instanceCfg.backup}"
-          ${pkgs.python3}/bin/python ${cfg.package}/generate-data.py ${instanceCfg.backup} $WORK_DIR ${instanceCfg.owner}/${instanceCfg.repository}
-
-          echo "do a hugo build of the site"
-          ${pkgs.hugo}/bin/hugo --source $WORK_DIR --logLevel debug --baseURL ${instanceCfg.siteBaseURL}
-
-          echo "deploying to ${cfg.wwwDir}/${instanceName}"
+          echo "Deploying to ${cfg.wwwDir}/${instanceName}"
           mkdir -p ${cfg.wwwDir}/${instanceName}
           rm -rf ${cfg.wwwDir}/${instanceName}/*
-          mv $WORK_DIR/public/* ${cfg.wwwDir}/${instanceName}
+          mv "$WORK_DIR/public"/* ${cfg.wwwDir}/${instanceName}
 
-          ${ optionalString instanceCfg.compressBackup ''
-            ${pkgs.gnutar}/bin/tar cf - ${instanceCfg.backup} | ${pkgs.xz}/bin/xz > $WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz
-            mv $WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz ${cfg.wwwDir}/${instanceCfg.owner}-${instanceCfg.repository }.tar.xz
+          ${optionalString instanceCfg.compressBackup ''
+            ${pkgs.gnutar}/bin/tar cf - ${instanceCfg.backup} | ${pkgs.xz}/bin/xz > "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz"
+            mv "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz" ${cfg.wwwDir}/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz
           ''}
-
         '';
         serviceConfig = {
           User = cfg.user;
           Group = cfg.group;
           Type = "oneshot";
-          Environment = ''HUGO_TITLE="${instanceCfg.siteName}" HUGO_PARAMS_OWNER="${instanceCfg.owner}" HUGO_PARAMS_REPOSITORY="${instanceCfg.repository}"  HUGO_PARAMS_FOOTER="${instanceCfg.siteFooter}" ${if isInt instanceCfg.goMaxProcs then ''GOMAXPROCS="${toString instanceCfg.goMaxProcs}"'' else ""}'';
 
           # Hardening measures
           PrivateTmp = "true";
@@ -185,5 +175,4 @@ in {
     };
     users.groups."${cfg.group}" = {};
   };
-
 }
