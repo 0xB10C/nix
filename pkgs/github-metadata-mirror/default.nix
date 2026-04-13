@@ -3,13 +3,13 @@
 stdenv.mkDerivation rec {
   name = "github-metadata-mirror";
   pname = "github-metadata-mirror";
-  version = "d392dc0792686c1b022f7697f54e8b94440cc62d";
+  version = "e9e88442fcb465cc2d95a0388fcb26fda6aa0051";
   
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "github-metadata-mirror";
     rev = version;
-    sha256 = "sha256-jYQpn1IKWF0fdMNtPoI2oCQYK9nKiWY21k992xKcafo=";
+    sha256 = "sha256-gIfX/BluATT46EBVWO3RKIWJ5+rDD+lAV4lRciuXcYI=";
   };
 
   installPhase = ''
