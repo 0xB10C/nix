@@ -3,18 +3,18 @@
 rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
-  version = "2534f592923da15c7470af6a03241cc6ae529b18";
+  version = "de0e83bc15a6055da0bc0116e560f0f5428f7021";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
     rev = version;
-    sha256 = "sha256-Gj8Df3raSovCHp9ZwjSgmN+ittJfjjFLQEOfsNqDBcA=";
+    sha256 = "sha256-maJ1fwt8WRQA8iCE5SGQxSbuunQGAp0MBiMLBXg1TmQ=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
 
-  cargoHash = "sha256-3/DZ34TNXEDIl2te5qZQYYF7o5AB55VsjYgPoGXkvyA=";
+  cargoHash = "sha256-87AnZFg7mzXdf5MU0gdUvauUBpCOdiX8nM5wlgWAHuk=";
 
   postInstall = ''
     cp -r www $out/www
