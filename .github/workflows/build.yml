@@ -36,6 +36,12 @@ jobs:
         sudo docker image prune --all --force
         sudo docker builder prune -a
     - run: df -h
+    # Otherwise builds inherit RLIMIT_NOFILE=unlimited, which bitcoind
+    # truncates to -1 when casting to int, failing tests that spawn a node.
+    # Run before install-nix-action so nix-daemon inherits the capped limit.
+    - name: Cap launchd maxfiles on macOS
+      if: startsWith(matrix.runsOn, 'macos-')
+      run: sudo launchctl limit maxfiles 1024 524288
     - name: Install nix
       uses: cachix/install-nix-action@v31
       with:

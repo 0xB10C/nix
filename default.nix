@@ -1,12 +1,9 @@
 { pkgs ? import <nixpkgs> { } }:
 let
-  linuxOnlyPkgs = pkgs.lib.attrsets.optionalAttrs pkgs.stdenv.hostPlatform.isLinux
-    {
-      # TODO: These aren't strictly linux-specific, but the build is failing on darwin.
-      ckpool = pkgs.callPackage ./pkgs/ckpool { };
-      stratum-observer = pkgs.callPackage ./pkgs/stratum-observer { };
-      mainnet-observer-backend = (pkgs.callPackage ./pkgs/mainnet-observer { }).backend;
-    };
+  # ckpool uses clock_nanosleep (librt) and /proc/cpuinfo, both Linux-only.
+  linuxOnlyPkgs = pkgs.lib.attrsets.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    ckpool = pkgs.callPackage ./pkgs/ckpool { };
+  };
   allPlatformsPkgs = {
     addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
     asmap-data = pkgs.callPackage ./pkgs/asmap-data { };
@@ -17,8 +14,10 @@ let
     fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
     github-metadata-backup = pkgs.callPackage ./pkgs/github-metadata-backup { };
     github-metadata-mirror = pkgs.callPackage ./pkgs/github-metadata-mirror { };
+    mainnet-observer-backend = (pkgs.callPackage ./pkgs/mainnet-observer { }).backend;
     miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
     peer-observer = pkgs.callPackage ./pkgs/peer-observer { };
+    stratum-observer = pkgs.callPackage ./pkgs/stratum-observer { };
   };
 in
   allPlatformsPkgs // linuxOnlyPkgs
