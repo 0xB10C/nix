@@ -61,11 +61,6 @@ rustPlatform.buildRustPackage rec {
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
   NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server";
 
-  # Avoid RLIMIT_NOFILE=unlimited overflowing to -1 in bitcoind on macOS.
-  preCheck = lib.optionalString stdenv.hostPlatform.isDarwin ''
-    ulimit -n 1024
-  '';
-
   meta = {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
   };
