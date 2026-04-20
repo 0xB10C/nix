@@ -30,6 +30,7 @@ stdenv.mkDerivation rec {
       "v28.0" = "sha256-LLtw6pMyqIJ3IWHiK4P3XoifLojB9yMNMo+MGNFGuRY=";
       "v29.0" = "sha256-XvoqYA5RYXbOjeidxV4Wxb8DhYv6Hz510XNMhmWkV1Y=";
       "v30.0" = "sha256-2I6ndH9B4bAgcbJzMpMrns2ZGaXSL8hgucjNs43Qpkk=";
+      "v31.0" = "sha256-XYYhTpviWXtdgy21vwgdIT/mI8TBhrC9tE+6uzAQyR4=";
     }.${version} or (builtins.trace "Bitcoin Core using dummy vendor SHA256" "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   };
 
