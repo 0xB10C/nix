@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "5b63d98be32022836be367cb54b85fd26238e37e";
+  version = "2345a755563770b07dce35241b1ef4ce0d5d70ca";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-uj0gdkhVE5MreOGGJqIRirIaEh8uHtAXbayGAvr/pbY=";
+    sha256 = "sha256-XrTpM7gLdP3+BuUAluWrWdkyA/N2mluj19+iOmQDfPk=";
   };
 
   hardeningDisable = [
@@ -67,6 +67,7 @@ rustPlatform.buildRustPackage rec {
 
   postInstall = ''
     cp -r $src/tools/metrics/dashboards $out
+    cp -r $src/tools/metrics/prometheus $out
     cp -r $src/tools/websocket/www $out/websocket-www
   '';
 }
