@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "5b63d98be32022836be367cb54b85fd26238e37e";
+  version = "a9862e5ca1ffbddcc6df42e358002f0dd6224e84";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-uj0gdkhVE5MreOGGJqIRirIaEh8uHtAXbayGAvr/pbY=";
+    sha256 = "sha256-80uy1HBTPWeUP1tSVr4Ad3zn/51gSbaPRTkyXUe69R4=";
   };
 
   hardeningDisable = [
@@ -50,7 +50,7 @@ rustPlatform.buildRustPackage rec {
       "--exclude log-extractor"
   ];
 
-  cargoHash = "sha256-eJFW1gX2RKdVE73t1VxhyfPO9oz+tqHrAfFASNbySoY=";
+  cargoHash = "sha256-TzNjPxps0Yve/sRX53ge2QKiOZYx4uSzsfuPQaopyJk=";
 
   # Set the path of the Linux kernel headers for the ebpf-extractor.
   KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing 
