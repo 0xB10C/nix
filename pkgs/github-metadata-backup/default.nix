@@ -3,16 +3,16 @@
 pkgs.rustPlatform.buildRustPackage rec {
   name = "github-metadata-backup";
   pname = "github-metadata-backup";
-  version = "3ce88b094a22bb6c2f8451a0275da04dc3b1135d";
+  version = "29c8f342a35b1d1ecb8318797c71c4c1a980c1a3";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xb10c";
     repo = "github-metadata-backup";
     rev = version;
-    sha256 = "sha256-0VgrENxMEGIuCeLM1MSfrFp5MGDx4GJph8TpDegYwMQ=";
+    sha256 = "sha256-8hDQuMnDmyn+lFg/6kx/NGNkQVgjiHRW0gpeKijFhrk=";
   };
 
-  cargoHash = "sha256-gG+7DJFgC4PvmeM8ccXCFBE4G+chRc7Uymrl2WsWrNU=";
+  cargoHash = "sha256-7u39nIpUp+zKOv0P/ZJ4H9Z4WMEp+X2tBWVxNI5k/JA=";
 
   meta = {
     description = ''
