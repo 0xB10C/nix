@@ -9,14 +9,17 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "a8ab4559f0fc956f0d99515e0996a6fc12bfba16";
+  version = "955f0ebd5190ca6b62689816ef2873c640c35a62";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-ObjsTx7b3Fpj4jAq1aKMGEvVYJffziS+2xSCuluAEIw=";
+    sha256 = "sha256-Bnn3yOCIe3hfiJeBNba4qFtRURh8AAYuHLA0SNVD7dE=";
   };
+
+  # needed for the archiver to know the GIT_HASH
+  GIT_HASH = version;
 
   hardeningDisable = [
     "stackprotector"
@@ -32,6 +35,7 @@ rustPlatform.buildRustPackage rec {
   nativeBuildInputs = with pkgs; [
     protobuf
     cmake
+    git
   ] ++ lib.optionals enableTracing [
     llvmPackages_20.clang-unwrapped
     pkg-config
@@ -50,10 +54,10 @@ rustPlatform.buildRustPackage rec {
       "--exclude log-extractor"
   ];
 
-  cargoHash = "sha256-TzNjPxps0Yve/sRX53ge2QKiOZYx4uSzsfuPQaopyJk=";
+  cargoHash = "sha256-h9LOMf5+2HIypmBgQeRR0U9kwjpFw55QnYssiDsKv7U=";
 
   # Set the path of the Linux kernel headers for the ebpf-extractor.
-  KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing 
+  KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing
     "${pkgs.linuxHeaders}/include";
 
   # In the integration tests, use the nix bitcoind and nats binaries.
