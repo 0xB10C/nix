@@ -6,6 +6,7 @@ let
   PEER_OBSERVER_ADDR_CHECK_METRICS_PORT = 10080;
   PEER_OBSERVER_WEBSOCKET_PORT = 10060;
   PEER_OBSERVER_P2PEXPORTER_PORT = 10070;
+  PEER_OBSERVER_ARCHIVER_DIR = "/data/archiver";
   NATS_PORT = 4222;
   BITCOIND_PORT = 12345;
   BITCOIND2_PORT = 23456;
@@ -191,6 +192,19 @@ in {
             password = "2345";
           };
         };
+
+        archiver = {
+          enable = true;
+          maxFileSize = 100;
+          compressionLevel = 1;
+          outputDir = PEER_OBSERVER_ARCHIVER_DIR;
+          baseName = "peer-observer-test";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-tool";
+            password = "2345";
+          };
+        };
       };
     };
   };
@@ -259,6 +273,12 @@ in {
 
     machine.systemctl("start peer-observer-tool-alerts.service")
     machine.wait_for_unit("peer-observer-tool-alerts.service", timeout=15)
+
+    machine.systemctl("start peer-observer-tool-archiver.service")
+    machine.wait_for_unit("peer-observer-tool-archiver.service", timeout=15)
+    archiver_dir = machine.succeed("ls -l ${PEER_OBSERVER_ARCHIVER_DIR}")
+    print("archiver_dir:", archiver_dir)
+    assert len(archiver_dir) != 0
 
     # wait for the ebpf-extractor again, since it might fail when attaching the a tracepoint
     time.sleep(5)

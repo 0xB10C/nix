@@ -229,11 +229,60 @@ in {
 
           nats = natsOpt;
         };
+
+        archiver = {
+          enable = mkEnableOption "event archiver";
+
+          nats = natsOpt;
+
+          outputDir = mkOption {
+            type = types.str;
+            default = "/var/lib/peer-observer/archiver/";
+            example = "/data/peer-observer-archives/";
+            description = "The directory the archiver writes the archives to.";
+          };
+
+          baseName = mkOption {
+            type = types.str;
+            default = "archive";
+            example = "demo-peer-observer";
+            description = "Base name for archive files (e.g., 'mainnet' -> 'mainnet.<timestamp>.bin.zst')";
+          };
+
+          maxFileSize = mkOption {
+            type = types.ints.positive;
+            default = 1073741824;
+            example = 524288000; # 500 MB
+            description = "Maximum compressed output size in bytes before rotation";
+          };
+
+          compressionLevel = mkOption {
+            type = types.ints.between 0 22;
+            default = 22;
+            example = 3;
+            description = "Zstd compression level (0 = no compression, 1-22)";
+          };
+
+          events = mkOption {
+            type = types.nullOr (types.listOf (types.enum [
+              "messages" "connections" "mempool" "validation"
+              "rpc" "p2p-extractor" "log-extractor"
+            ]));
+            default = null;
+            example = [ "messages" "connections" ];
+            description = ''
+              Which event categories to archive. When `null` (the default),
+              no selection flags are passed and the archiver records all
+              categories. Set to an explicit non-empty list to restrict.
+            '';
+          };
+
+        };
       };
 
     };
   };
-  config = mkIf (cfg.extractors.ebpf.enable || cfg.extractors.rpc.enable || cfg.extractors.p2p.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable) {
+  config = mkIf (cfg.extractors.ebpf.enable || cfg.extractors.rpc.enable || cfg.extractors.p2p.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable || cfg.tools.alerts.enable || cfg.tools.archiver.enable) {
     users = {
       users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
       groups.peerobserver = { };
@@ -241,6 +290,7 @@ in {
 
     systemd.tmpfiles.rules = [
       "d '/var/lib/peer-observer/' 0770 'peerobserver' 'peerobserver' - -"
+      (lib.optionals cfg.tools.archiver.enable "d '${cfg.tools.archiver.outputDir}' 0770 'peerobserver' 'peerobserver' - -")
     ];
 
     # before we can start the peer-observer, wait until the PID file has been created by bitcoind
@@ -524,6 +574,44 @@ in {
           StartLimitBurst = 3;
           PermissionsStartOnly = true;
           MemoryDenyWriteExecute = true;
+          DynamicUser = true;
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+
+      systemd.services.peer-observer-tool-archiver = mkIf cfg.tools.archiver.enable {
+        description = "peer-observer archiver";
+        wantedBy = [ "multi-user.target" ];
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
+        startLimitIntervalSec = 120;
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+          ExecStart = ''
+            ${cfg.package}/bin/archiver \
+            --output-dir ${cfg.tools.archiver.outputDir} \
+            --base-name ${cfg.tools.archiver.baseName} \
+            --max-file-size ${toString cfg.tools.archiver.maxFileSize} \
+            --compression-level ${toString cfg.tools.archiver.compressionLevel} \
+            ${lib.escapeShellArgs (
+              lib.optionals (cfg.tools.archiver.events != null)
+                (map (e: "--${e}") cfg.tools.archiver.events)
+            )}
+            --nats-address ${cfg.tools.archiver.nats.address} \
+            ${optionalString (cfg.tools.archiver.nats.username != null) "--nats-username ${cfg.tools.archiver.nats.username}" } \
+            ${optionalString (cfg.tools.archiver.nats.password != null) "--nats-password ${cfg.tools.archiver.nats.password}" } \
+            ${optionalString (cfg.tools.archiver.nats.passwordFile != null) "--nats-password-file ${cfg.tools.archiver.nats.passwordFile}" }
+          '';
+          Environment = "RUST_LOG=info";
+          Restart = "always";
+          # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          MemoryDenyWriteExecute = true;
+          ConfigurationDirectory = "peer-observer";
+          WorkingDirectory = cfg.tools.archiver.outputDir;
+          ReadWriteDirectories = cfg.tools.archiver.outputDir;
           DynamicUser = true;
           User = "peerobserver";
           Group = "peerobserver";
