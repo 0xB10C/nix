@@ -223,6 +223,12 @@ in {
             description = "Address the websocket server should listen on.";
           };
         };
+
+        alerts = {
+          enable = mkEnableOption "alerts based on heuristics";
+
+          nats = natsOpt;
+        };
       };
 
     };
@@ -483,6 +489,33 @@ in {
             ${optionalString (cfg.tools.websocket.nats.username != null) "--nats-username ${cfg.tools.websocket.nats.username}" } \
             ${optionalString (cfg.tools.websocket.nats.password != null) "--nats-password ${cfg.tools.websocket.nats.password}" } \
             ${optionalString (cfg.tools.websocket.nats.passwordFile != null) "--nats-password-file ${cfg.tools.websocket.nats.passwordFile}" }
+          '';
+          Environment = "RUST_LOG=info";
+          Restart = "always";
+          # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          MemoryDenyWriteExecute = true;
+          DynamicUser = true;
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+
+      systemd.services.peer-observer-tool-alerts = mkIf cfg.tools.alerts.enable {
+        description = "peer-observer alerts";
+        wantedBy = [ "multi-user.target" ];
+        after = ["network-online.target" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" cfg.dependsOnNATSService ];
+        startLimitIntervalSec = 120;
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+          ExecStart = ''
+            ${cfg.package}/bin/alerts \
+            --nats-address ${cfg.tools.alerts.nats.address} \
+            ${optionalString (cfg.tools.alerts.nats.username != null) "--nats-username ${cfg.tools.alerts.nats.username}" } \
+            ${optionalString (cfg.tools.alerts.nats.password != null) "--nats-password ${cfg.tools.alerts.nats.password}" } \
+            ${optionalString (cfg.tools.alerts.nats.passwordFile != null) "--nats-password-file ${cfg.tools.alerts.nats.passwordFile}" }
           '';
           Environment = "RUST_LOG=info";
           Restart = "always";

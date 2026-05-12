@@ -182,6 +182,15 @@ in {
             password = "2345";
           };
         };
+
+        alerts = {
+          enable = true;
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-tool";
+            password = "2345";
+          };
+        };
       };
     };
   };
@@ -247,6 +256,9 @@ in {
     # but that's expected as we only open a TCP connection to the websocket server, and don't actually do the Websocket
     # handshake
     machine.wait_for_open_port(${toString PEER_OBSERVER_WEBSOCKET_PORT})
+
+    machine.systemctl("start peer-observer-tool-alerts.service")
+    machine.wait_for_unit("peer-observer-tool-alerts.service", timeout=15)
 
     # wait for the ebpf-extractor again, since it might fail when attaching the a tracepoint
     time.sleep(5)
