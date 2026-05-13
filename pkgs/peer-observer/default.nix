@@ -9,7 +9,7 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "955f0ebd5190ca6b62689816ef2873c640c35a62";
+  version = "35881c0f8b07fdc31a7d6356adb9a883b327f231";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
