@@ -290,7 +290,8 @@ in {
 
     systemd.tmpfiles.rules = [
       "d '/var/lib/peer-observer/' 0770 'peerobserver' 'peerobserver' - -"
-      (lib.optionals cfg.tools.archiver.enable "d '${cfg.tools.archiver.outputDir}' 0770 'peerobserver' 'peerobserver' - -")
+    ] ++ lib.optionals cfg.tools.archiver.enable [
+      "d '${cfg.tools.archiver.outputDir}' 0770 'peerobserver' 'peerobserver' - -"
     ];
 
     # before we can start the peer-observer, wait until the PID file has been created by bitcoind
