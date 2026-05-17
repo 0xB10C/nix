@@ -6,13 +6,13 @@ in
 
 stdenv.mkDerivation rec {
   pname = "github-metadata-mirror";
-  version = "7d3021568e6489164a0d05d91fdbfe678fcb19b6";
+  version = "da474e22012bda9ae40c3466deec51728defe353";
 
   src = fetchFromGitHub {
     owner = "0xB10C";
     repo = "github-metadata-mirror";
     rev = version;
-    sha256 = "sha256-uxCfGXNpsQ2mZN8O8N1kUzSMC4vEokXFI9sUdYm14pE=";
+    sha256 = "sha256-9BBAiN97mKUQGKKyEnxm2ie8KYGN/+M+gnbLwVfPkUE=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
