@@ -129,6 +129,7 @@ in {
             --owner ${escapeShellArg instanceCfg.owner} \
             --repository ${escapeShellArg instanceCfg.repository} \
             --base-url ${escapeShellArg instanceCfg.siteBaseURL} \
+	    --markdown \
             ${optionalString (instanceCfg.siteFooter != "") "--footer ${escapeShellArg instanceCfg.siteFooter}"}
 
           echo "Deploying to ${cfg.wwwDir}/${instanceName}"
