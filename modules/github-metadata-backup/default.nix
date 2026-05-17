@@ -208,6 +208,8 @@ in {
           ${ lib.concatMapStringsSep "\n" (gitRemote: ''
             # ${gitRemote.name}
             ${pkgs.git}/bin/git -C ${cfg.destination} remote add ${gitRemote.name} ${gitRemote.remote}
+            echo "pulling ${cfg.owner}:${cfg.repository} (${gitRemote.remote})"
+            ${pkgs.git}/bin/git -C ${cfg.destination} -c credential.helper='!f() { sleep 1; echo "username=${gitRemote.user}"; echo "password=$(cat ${gitRemote.tokenFile})"; }; f' pull ${gitRemote.name} master --rebase
             echo "pushing ${cfg.owner}:${cfg.repository} backup to remote '${gitRemote.name}' (${gitRemote.remote})"
             ${pkgs.git}/bin/git -C ${cfg.destination} -c credential.helper='!f() { sleep 1; echo "username=${gitRemote.user}"; echo "password=$(cat ${gitRemote.tokenFile})"; }; f' push --set-upstream ${gitRemote.name} master
             '') cfg.pushToRemotes }
