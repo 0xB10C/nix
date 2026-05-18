@@ -129,7 +129,7 @@ in {
             --owner ${escapeShellArg instanceCfg.owner} \
             --repository ${escapeShellArg instanceCfg.repository} \
             --base-url ${escapeShellArg instanceCfg.siteBaseURL} \
-	    --markdown \
+            --markdown \
             ${optionalString (instanceCfg.siteFooter != "") "--footer ${escapeShellArg instanceCfg.siteFooter}"}
 
           echo "Deploying to ${cfg.wwwDir}/${instanceName}"
@@ -139,8 +139,8 @@ in {
           mv "$WORK_DIR/public"/* ${cfg.wwwDir}/${instanceName}
 
           ${optionalString instanceCfg.compressBackup ''
-            ${pkgs.gnutar}/bin/tar cf - ${instanceCfg.backup} | ${pkgs.xz}/bin/xz > "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz"
-            mv "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz" ${cfg.wwwDir}/${instanceCfg.owner}-${instanceCfg.repository}.tar.xz
+            ${pkgs.gnutar}/bin/tar --use-compress-program=${pkgs.gzip}/bin/gzip -cf "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.gz" --exclude='.git' ${instanceCfg.backup}
+            mv "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.gz" ${cfg.wwwDir}/${instanceCfg.owner}-${instanceCfg.repository}.tar.gz
           ''}
         '';
         serviceConfig = {
