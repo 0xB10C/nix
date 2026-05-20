@@ -3,6 +3,7 @@ let
   # ckpool uses clock_nanosleep (librt) and /proc/cpuinfo, both Linux-only.
   linuxOnlyPkgs = pkgs.lib.attrsets.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
     ckpool = pkgs.callPackage ./pkgs/ckpool { };
+    wprof = pkgs.callPackage ./pkgs/wprof { };
   };
   allPlatformsPkgs = rec {
     addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
