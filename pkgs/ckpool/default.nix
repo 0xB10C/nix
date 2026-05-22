@@ -4,13 +4,13 @@
 stdenv.mkDerivation rec {
   pname = "ckpool";
   name = "ckpool";
-  version = "v0.9.9";
+  version = "v1.1.1";
 
   src = pkgs.fetchFromBitbucket {
     owner = "ckolivas";
-    repo = "ckpool-solo";
+    repo = "ckpool";
     rev = version;
-    sha256 = "sha256-kCZ9ILaFVQC1xvG7a14tHUVeGY9KuZEnvhNXRibDBms=";
+    sha256 = "sha256-pEapAfid7AdwupNZUGguF5Meym5uuVMveghu93Jkx0s=";
   };
 
   nativeBuildInputs = [ autoreconfHook pkg-config zeromq yasm ];
@@ -22,11 +22,6 @@ stdenv.mkDerivation rec {
     # 'make install' tries to set setcap CAP_NET_BIND_SERVICE=+eip on the binary
     # We don't want or need that.
     ./make-install-no-setcap.patch
-  ];
-
-  configureFlags = [
-    # needed for libjansson.a
-    "--enable-static"
   ];
 
   passthru.tests.version = testers.testVersion {
