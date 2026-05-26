@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "1cb5ceb79dcffb6b271f4917add3c3eaf07484a7";
+  version = "d29b0e7db04eca28e8fe80ea01f129109369fbff";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-gQNPJ8Lw+I8+zGNVl6UyO7AhmijkceL/EWNbedlWryk=";
+    sha256 = "sha256-cAVWggbOi3eP3uBDtiLbOM8dEePs5WXLBNKGWERVAOE=";
   };
 
   # needed for the archiver to know the GIT_HASH
@@ -73,6 +73,7 @@ rustPlatform.buildRustPackage rec {
 
   postInstall = ''
     cp -r $src/tools/metrics/dashboards $out
+    cp -r $src/tools/metrics/prometheus $out
     cp -r $src/tools/websocket/www $out/websocket-www
   '';
 }
