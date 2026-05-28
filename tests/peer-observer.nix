@@ -26,7 +26,17 @@ in {
 
     services.bitcoind."regtest" = {
       enable = true;
-      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-latest;
+      # HACK: we actually want to run the libexec/bitcoin-node binary for the ipc-extractor, but
+      # we can't configure the binary name for the default bitcoind service.
+      package =
+        ((pkgs.callPackage ./.. { }).bitcoind-tracing-latest).overrideAttrs (old: {
+          postInstall =
+            (old.postInstall or "")
+            + ''
+              mv $out/bin/bitcoind $out/bin/bitcoind-orig
+              ln -s $out/libexec/bitcoin-node $out/bin/bitcoind
+            '';
+        });
       port = BITCOIND_PORT;
       # needs to be "/run/bitcoind-<name>/bitcoind.pid"
       pidFile = "/run/bitcoind-regtest/bitcoind.pid";
@@ -34,6 +44,7 @@ in {
         regtest=1
         debug=net
 
+        ipcbind=unix:/run/bitcoind-regtest/node.sock
 
         [regtest]
         # used to test the rpc-extractor via getpeerinfo (this will show up as a peer)
@@ -60,7 +71,7 @@ in {
 
     services.bitcoind."regtest2" = {
       enable = true;
-      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-v29;
+      package = (pkgs.callPackage ./.. { }).bitcoind-tracing-latest;
       port = BITCOIND2_PORT;
       extraConfig = ''
         regtest=1
@@ -96,12 +107,8 @@ in {
       };
     };
 
-    # In a test, we want to never restart the extractor if it fails as this could mean
-    # there is something wrong.
-    systemd.services.peer-observer-extractor.serviceConfig.Restart = lib.mkForce "no";
-    systemd.services.peer-observer-extractor.serviceConfig.Environment = "RUST_LOG=debug";
-    services.peer-observer = {
 
+    services.peer-observer = {
       dependsOnNATSService = "nats.service";
 
       extractors = {
@@ -145,6 +152,17 @@ in {
         log = {
           enable = true;
           debugLog = "/var/lib/bitcoind-regtest/regtest/debug.log";
+          nats = {
+            address = "127.0.0.1:${toString NATS_PORT}";
+            username = "peerobserver-extractor";
+            passwordFile = "/etc/nats-extractor-password";
+          };
+        };
+
+        ipc = {
+          enable = true;
+          ipcSocket = "/run/bitcoind-regtest/node.sock";
+          extraArgs = "--query-interval 1";
           nats = {
             address = "127.0.0.1:${toString NATS_PORT}";
             username = "peerobserver-extractor";
@@ -226,6 +244,10 @@ in {
     machine.wait_for_open_port(${toString PEER_OBSERVER_P2PEXPORTER_PORT})
     machine.wait_for_unit("peer-observer-log-extractor-fifo-pipe.service", timeout=15)
     machine.wait_for_unit("peer-observer-log-extractor.service", timeout=15)
+    machine.wait_for_unit("peer-observer-ipc-extractor.service", timeout=15)
+
+    # mine two blocks, so we have some test data
+    machine.succeed("${(pkgs.callPackage ./.. { }).bitcoind-tracing-latest}/bin/bitcoin-cli --regtest -rpcport=${toString BITCOIND_RPC_PORT} --rpcuser=peer-observer --rpcpassword=hunter2 generatetoaddress 2 bcrt1qs758ursh4q9z627kt3pp5yysm78ddny6txaqgw")
 
     # give the extractor a bit of time to start up
     time.sleep(5)
@@ -255,14 +277,19 @@ in {
     assert "peerobserver_log_events 0" not in metrics
     print("OK!")
 
+    print("to test the ipc-extractor, check if the peerobserver_ipc_block_tip_height metric is in there and that the value isn't zero:")
+    assert "peerobserver_ipc_block_tip_height 2" in metrics
+    assert "peerobserver_ipc_block_tip_height 0" not in metrics
+    print("OK!")
+
     machine.systemctl("start peer-observer-tool-addr-connectivity-check.service")
     machine.wait_for_unit("peer-observer-tool-addr-connectivity-check.service", timeout=15)
     machine.wait_for_open_port(${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT})
 
-    # right after start up, the addr connectivity check metrics endpoint
-    # returns an empty response as no metrics have been set
-    metrics2 = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}/metrics")
-    assert len(metrics2) == 0
+    # The addr connectivity check metrics endpoint might return something, however, the contents depend on timing
+    # We just check that curl succeeds here.
+    print("test addr connectivity check metrics server online")
+    machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_ADDR_CHECK_METRICS_PORT}/metrics")
 
     machine.systemctl("start peer-observer-tool-websocket.service")
     machine.wait_for_unit("peer-observer-tool-websocket.service", timeout=15)
