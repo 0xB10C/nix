@@ -162,6 +162,26 @@ in {
           };
         };
 
+        ipc = {
+          enable = mkEnableOption "peer-observer ipc-extractor";
+
+          ipcSocket = mkOption {
+            type = types.str;
+            default = null;
+            example = "/var/lib/bitcoind-mainnet/node.sock";
+            description = "A path to an UNIX socket to read IPC data from. Run the node with `bitcoin-node -ipcbind=unix`.";
+          };
+
+          nats = natsOpt;
+
+          extraArgs= mkOption {
+            type = types.str;
+            default = "";
+            example = "";
+            description = "Extra arguments to pass to the peer-observer ipc-extractor.";
+          };
+        };
+
         log = {
           enable = mkEnableOption "peer-observer log-extractor";
 
@@ -282,9 +302,23 @@ in {
 
     };
   };
-  config = mkIf (cfg.extractors.ebpf.enable || cfg.extractors.rpc.enable || cfg.extractors.p2p.enable || cfg.tools.metrics.enable || cfg.tools.addrConnectivity.enable || cfg.tools.websocket.enable || cfg.tools.alerts.enable || cfg.tools.archiver.enable) {
+  config = mkIf (
+    cfg.extractors.ebpf.enable ||
+    cfg.extractors.rpc.enable ||
+    cfg.extractors.p2p.enable ||
+    cfg.extractors.log.enable ||
+    cfg.extractors.ipc.enable ||
+    cfg.tools.metrics.enable ||
+    cfg.tools.addrConnectivity.enable ||
+    cfg.tools.websocket.enable ||
+    cfg.tools.alerts.enable ||
+    cfg.tools.archiver.enable
+  ) {
     users = {
-      users.peerobserver = { isSystemUser = true; group = "peerobserver"; };
+      users.peerobserver = {
+        isSystemUser = true;
+        group = "peerobserver";
+      };
       groups.peerobserver = { };
     };
 
@@ -295,24 +329,24 @@ in {
     ];
 
     # before we can start the peer-observer, wait until the PID file has been created by bitcoind
-    # in the RuntimeDirectory
+    # in the RuntimeDirectory, and fix up socket permissions for the ipc-extractor
     systemd.services."${cfg.extractors.dependOn}".serviceConfig = {
       RuntimeDirectory = "${cfg.extractors.dependOn}";
-      ExecStartPost = ''
-        ${pkgs.bash}/bin/bash -c ' \
-        while ! stat ${cfg.extractors.ebpf.bitcoindPIDFile} 2>/dev/null; do \
-          echo \"Waiting for bitcoind PID file...\"; \
-          sleep 1; \
-        done; \
-        chmod +r ${cfg.extractors.ebpf.bitcoindPIDFile}'
-      '';
+    } // lib.optionalAttrs (cfg.extractors.ebpf.enable || cfg.extractors.ipc.enable) {
+      ExecStartPost =
+        lib.optionals cfg.extractors.ebpf.enable [
+          "${pkgs.bash}/bin/bash -c 'while ! stat ${cfg.extractors.ebpf.bitcoindPIDFile} 2>/dev/null; do echo Waiting for bitcoind PID file; sleep 1; done; chmod +r ${cfg.extractors.ebpf.bitcoindPIDFile}'"
+        ] ++ lib.optionals cfg.extractors.ipc.enable [
+          # we need read+write access to the socket to interact with it
+          "${pkgs.bash}/bin/bash -c 'while ! stat ${cfg.extractors.ipc.ipcSocket} 2>/dev/null; do echo Waiting for IPC socket; sleep 1; done; chmod a+rw ${cfg.extractors.ipc.ipcSocket}'"
+        ];
     };
 
     systemd.services.peer-observer-ebpf-extractor = mkIf cfg.extractors.ebpf.enable {
       description = "peer-observer ebpf-extractor";
       wantedBy = [ "multi-user.target" ];
       after = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ];
-      wants = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ]; #
+      wants = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ];
       startLimitIntervalSec = 120;
       serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           ExecStart = ''
@@ -459,6 +493,35 @@ in {
           DynamicUser = true;
           WorkingDirectory = "/var/lib/peer-observer";
           ReadOnlyPaths = "/var/lib/peer-observer";
+          User = "peerobserver";
+          Group = "peerobserver";
+        };
+      };
+
+      systemd.services.peer-observer-ipc-extractor = mkIf cfg.extractors.ipc.enable {
+        description = "peer-observer ipc-extractor";
+        wantedBy = [ "multi-user.target" ];
+        after = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ];
+        wants = ["network-online.target" "${cfg.extractors.dependOn}.service" cfg.dependsOnNATSService ];
+        startLimitIntervalSec = 120;
+        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+          ExecStartPre = "${pkgs.coreutils}/bin/stat ${cfg.extractors.ipc.ipcSocket}";
+          ExecStart = ''
+            ${cfg.package}/bin/ipc-extractor \
+            --ipc-socket-path ${cfg.extractors.ipc.ipcSocket} \
+            --nats-address ${cfg.extractors.ipc.nats.address} \
+            ${optionalString (cfg.extractors.ipc.nats.username != null) "--nats-username ${cfg.extractors.ipc.nats.username}" } \
+            ${optionalString (cfg.extractors.ipc.nats.password != null) "--nats-password ${cfg.extractors.ipc.nats.password}" } \
+            ${optionalString (cfg.extractors.ipc.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.ipc.nats.passwordFile}" } \
+            ${cfg.extractors.ipc.extraArgs}
+          '';
+          Restart = "always";
+          # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
+          RestartSec = 30;
+          StartLimitBurst = 3;
+          PermissionsStartOnly = true;
+          DynamicUser = true;
+          ProtectProc = "default";
           User = "peerobserver";
           Group = "peerobserver";
         };
