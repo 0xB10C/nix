@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "dc0dc84f3e7022676b7cd77fe72786e7fd7187af";
+  version = "1cb5ceb79dcffb6b271f4917add3c3eaf07484a7";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-2zECy7ZJPZMkZcg32piXxaovrPDWr58OBrJgcXXPDVE=";
+    sha256 = "sha256-gQNPJ8Lw+I8+zGNVl6UyO7AhmijkceL/EWNbedlWryk=";
   };
 
   # needed for the archiver to know the GIT_HASH
@@ -36,6 +36,7 @@ rustPlatform.buildRustPackage rec {
     protobuf
     cmake
     git
+    capnproto
   ] ++ lib.optionals enableTracing [
     llvmPackages_20.clang-unwrapped
     pkg-config
@@ -54,7 +55,7 @@ rustPlatform.buildRustPackage rec {
       "--exclude log-extractor"
   ];
 
-  cargoHash = "sha256-filowxM78Movl+ztusPelI5Cez3+S2Zw+5SB1O6kHx0=";
+  cargoHash = "sha256-aOek42YwId1YTR9jCETHHocg0lT7QAEH4ykQzvBfEb4=";
 
   # Set the path of the Linux kernel headers for the ebpf-extractor.
   KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing
@@ -63,6 +64,7 @@ rustPlatform.buildRustPackage rec {
   # In the integration tests, use the nix bitcoind and nats binaries.
   BITCOIND_SKIP_DOWNLOAD = "1";
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+  BITCOIN_NODE_EXE = "${pkgs.bitcoind}/libexec/bitcoin-node";
   NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server";
 
   meta = {
