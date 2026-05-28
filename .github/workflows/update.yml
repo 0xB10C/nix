@@ -81,7 +81,7 @@ jobs:
             git checkout -b $BRANCH
             CURRENT_HEAD=$(git log -1 --format=%H)
             # HACK: "... || true" to avoid failing when no update is avaliable
-            nix-shell -p nix-update --run "nix-update --flake --commit --build --version=branch ${{ matrix.package }} || true"
+            nix-shell -p nix-update --run "nix-update --flake --commit --version=branch ${{ matrix.package }} || true"
             NEW_HEAD=$(git log -1 --format=%H)
 
             if [ "$CURRENT_HEAD" = "$NEW_HEAD" ]; then
