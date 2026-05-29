@@ -20,6 +20,7 @@ let
     mainnet-observer-backend = (pkgs.callPackage ./pkgs/mainnet-observer { }).backend;
     miningpool-observer = pkgs.callPackage ./pkgs/miningpool-observer { };
     peer-observer = pkgs.callPackage ./pkgs/peer-observer { };
+    samply = pkgs.callPackage ./pkgs/samply { };
     stratum-observer = pkgs.callPackage ./pkgs/stratum-observer { };
   };
 in
