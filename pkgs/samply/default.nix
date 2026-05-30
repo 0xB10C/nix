@@ -6,7 +6,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "samply";
-  version = "0.13.1-unstable-2026-05-13";
+  version = "wholesym-v0.8.1-unstable-2026-05-13";
 
   src = fetchFromGitHub {
     owner = "mstange";
