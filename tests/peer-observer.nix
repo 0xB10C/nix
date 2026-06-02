@@ -230,6 +230,9 @@ in {
   testScript = ''
     import time
 
+    # wait util we can execute command to start with the test.
+    machine.succeed("echo 'booted'")
+
     machine.wait_for_unit("nats.service", timeout=15)
     machine.wait_for_open_port(${toString NATS_PORT})
 

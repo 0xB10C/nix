@@ -133,7 +133,7 @@ in
     rss = machine.succeed("curl http://127.0.0.1:${toString MPO_WEB_PORT}/template-and-block/sanctioned-feed.xml");
     print(rss)
     assert "No Blocks with missing Sanctioned Transactions present in the database" in rss
-        
+
     machine.succeed("${pkgs.postgresql}/bin/psql -U miningpoolobserver -d miningpoolobserver -c 'select * from sanctioned_addresses;' | grep ${SANCTIONED_ADDRESS}")
   '';
 }
