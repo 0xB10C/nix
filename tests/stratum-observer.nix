@@ -87,6 +87,9 @@ in {
   };
 
   testScript = ''
+    # wait util we can execute command to start with the test.
+    machine.succeed("echo 'booted'")
+
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
     machine.wait_for_open_port(${toString BITCOIND_RPC_PORT})
 
@@ -95,7 +98,7 @@ in {
 
     machine.wait_for_unit("postgresql.service", timeout=15)
     machine.wait_for_open_port(${toString PG_PORT})
-    
+
     machine.wait_for_unit("stratum-observer.service", timeout=15)
     machine.wait_for_open_port(${toString STRATUM_OBSERVER_WEBSOCKET_PORT})
 
@@ -105,6 +108,6 @@ in {
     print(config)
 
     # check that the database table has been created
-    machine.succeed("${pkgs.postgresql}/bin/psql -U stratumobserver -c 'select * from job_updates limit 0;' | grep timestamp ") 
+    machine.succeed("${pkgs.postgresql}/bin/psql -U stratumobserver -c 'select * from job_updates limit 0;' | grep timestamp ")
   '';
 }

@@ -56,6 +56,9 @@ in
     };
 
   testScript = ''
+    # wait util we can execute command to start with the test.
+    machine.succeed("echo 'booted'")
+
     machine.wait_for_unit("bitcoind-regtest.service", timeout=15)
     machine.wait_for_open_port(${toString BITCOIND_REST_PORT})
 
