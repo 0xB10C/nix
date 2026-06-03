@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "90671cac8b8f762935631db63f4d24b6b33cdb96";
+  version = "0b44294bd31179584726f2d5332f3e05daab9ea6";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-Kq+EfQ86rfS1/OETSAaMwixnv82cCacfva7fCAQRuS8=";
+    sha256 = "sha256-/QcKd8xS3lBwIIRqXNGgR9d/gwmwN1LGHUpitYShxFQ=";
   };
 
   # needed for the archiver to know the GIT_HASH
