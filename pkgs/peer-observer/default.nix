@@ -66,13 +66,17 @@ rustPlatform.buildRustPackage rec {
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
   BITCOIN_NODE_EXE = "${pkgs.bitcoind}/libexec/bitcoin-node";
   NATS_SERVER_BINARY="${pkgs.nats-server}/bin/nats-server";
+  
+  passthru = {
+    # directory with the Grafana dashboards of the metrics tool
+    metrics-dashboards = "${src}/tools/metrics/dashboards";
+    # directory with the Prometheus rules of the metrics tool
+    metrics-prometheus-rules = "${src}/tools/metrics/prometheus";
+    # directory with the Websocket www pages
+    websocket-www-pages = "${src}/tools/websocket/www";
+  };
 
   meta = {
     description = "Hooks into Bitcoin Core to observe how our peers interact with us.";
   };
-
-  postInstall = ''
-    cp -r $src/tools/metrics/dashboards $out
-    cp -r $src/tools/websocket/www $out/websocket-www
-  '';
 }
