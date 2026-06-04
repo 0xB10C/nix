@@ -172,6 +172,13 @@ in {
             description = "A path to an UNIX socket to read IPC data from. Run the node with `bitcoin-node -ipcbind=unix`.";
           };
 
+          metricsAddress = mkOption {
+            type = types.str;
+            default = "127.0.0.1:8286";
+            example = "127.0.0.1:8286";
+            description = "Address the ipc-extractor metrics webserver should listen on.";
+          };
+
           nats = natsOpt;
 
           extraArgs= mkOption {
@@ -513,6 +520,7 @@ in {
             ${optionalString (cfg.extractors.ipc.nats.username != null) "--nats-username ${cfg.extractors.ipc.nats.username}" } \
             ${optionalString (cfg.extractors.ipc.nats.password != null) "--nats-password ${cfg.extractors.ipc.nats.password}" } \
             ${optionalString (cfg.extractors.ipc.nats.passwordFile != null) "--nats-password-file ${cfg.extractors.ipc.nats.passwordFile}" } \
+            --prometheus-address ${cfg.extractors.ipc.metricsAddress} \
             ${cfg.extractors.ipc.extraArgs}
           '';
           Restart = "always";
