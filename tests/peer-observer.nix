@@ -6,6 +6,7 @@ let
   PEER_OBSERVER_ADDR_CHECK_METRICS_PORT = 10080;
   PEER_OBSERVER_WEBSOCKET_PORT = 10060;
   PEER_OBSERVER_P2PEXPORTER_PORT = 10070;
+  PEER_OBSERVER_IPC_METRICS_PORT = 10100;
   PEER_OBSERVER_ARCHIVER_DIR = "/data/archiver";
   NATS_PORT = 4222;
   BITCOIND_PORT = 12345;
@@ -162,6 +163,7 @@ in {
         ipc = {
           enable = true;
           ipcSocket = "/run/bitcoind-regtest/node.sock";
+          metricsAddress = "127.0.0.1:${toString PEER_OBSERVER_IPC_METRICS_PORT}";
           extraArgs = "--query-interval 1";
           nats = {
             address = "127.0.0.1:${toString NATS_PORT}";
@@ -248,6 +250,7 @@ in {
     machine.wait_for_unit("peer-observer-log-extractor-fifo-pipe.service", timeout=15)
     machine.wait_for_unit("peer-observer-log-extractor.service", timeout=15)
     machine.wait_for_unit("peer-observer-ipc-extractor.service", timeout=15)
+    machine.wait_for_open_port(${toString PEER_OBSERVER_IPC_METRICS_PORT})
 
     # mine two blocks, so we have some test data
     machine.succeed("${(pkgs.callPackage ./.. { }).bitcoind-tracing-latest}/bin/bitcoin-cli --regtest -rpcport=${toString BITCOIND_RPC_PORT} --rpcuser=peer-observer --rpcpassword=hunter2 generatetoaddress 2 bcrt1qs758ursh4q9z627kt3pp5yysm78ddny6txaqgw")
@@ -284,6 +287,10 @@ in {
     assert "peerobserver_ipc_block_tip_height 2" in metrics
     assert "peerobserver_ipc_block_tip_height 0" not in metrics
     print("OK!")
+    
+    print("test ipc metrics server online")
+    metrics = machine.succeed("curl http://127.0.0.1:${toString PEER_OBSERVER_IPC_METRICS_PORT}/metrics")
+    assert "ipcextractor_ipc_fetch_duration_seconds" in metrics
 
     machine.systemctl("start peer-observer-tool-addr-connectivity-check.service")
     machine.wait_for_unit("peer-observer-tool-addr-connectivity-check.service", timeout=15)
