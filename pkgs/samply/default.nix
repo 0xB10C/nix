@@ -6,7 +6,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "samply";
-  version = "0-unstable-2026-05-13";
+  version = "samply-symbols-v0.24.1-unstable-2026-05-13";
 
   src = fetchFromGitHub {
     owner = "mstange";
