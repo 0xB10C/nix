@@ -107,7 +107,7 @@ in {
         after = [ "network-online.target" ];
         requires = [ "network-online.target" ];
         script = ''
-          set -e
+          set -o errexit -o nounset -o pipefail -o xtrace
 
           WORK_DIR=$(mktemp -d -t "github-metadata-mirror-XXXXXXXX")
           if [[ ! "$WORK_DIR" || ! -d "$WORK_DIR" ]]; then
@@ -134,9 +134,10 @@ in {
 
           echo "Deploying to ${cfg.wwwDir}/${instanceName}"
           chmod -R u+w "$WORK_DIR/public"
-          mkdir -p ${cfg.wwwDir}/${instanceName}
-          rm -rf ${cfg.wwwDir}/${instanceName}/*
-          mv "$WORK_DIR/public"/* ${cfg.wwwDir}/${instanceName}
+          mkdir -p "${cfg.wwwDir}/${instanceName}"
+          cp -a "$WORK_DIR/public/." "${cfg.wwwDir}/${instanceName}/"
+          rm -rf "$WORK_DIR/public"
+
 
           ${optionalString instanceCfg.compressBackup ''
             ${pkgs.gnutar}/bin/tar --use-compress-program=${pkgs.gzip}/bin/gzip -cf "$WORK_DIR/${instanceCfg.owner}-${instanceCfg.repository}.tar.gz" --exclude='.git' ${instanceCfg.backup}
