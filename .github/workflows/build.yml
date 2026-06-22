@@ -27,7 +27,7 @@ jobs:
     runs-on: "${{ matrix.runsOn }}"
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - run: df -h
     - name: free up disk space
       if: ${{ !startsWith(matrix.runsOn, 'macos-') }}
