@@ -19,6 +19,11 @@ in
           url = "http://${hostname}";
           debug = true;
 
+          mirror = {
+            enable = true;
+            siteUrl = "https://archive.example.com";
+          };
+
           timer = {
             enable = true;
             # set this for the tests, but make sure it never fires
@@ -87,6 +92,13 @@ in
 
     # we should be able to load the metadata
     print(json.loads(metadata))
+
+    # the mirror step should have rendered a static HTML site
+    site = f"{dir}/site"
+    print(f"contents of {site}:")
+    print(machine.succeed(f"ls -la {site}"))
+
+    machine.succeed(f"stat {site}/index.html")
 
   '';
 }
