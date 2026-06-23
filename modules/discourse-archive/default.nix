@@ -12,6 +12,11 @@ let
         if instanceCfg.targetDir != null
         then instanceCfg.targetDir
         else "/var/lib/discourse-archive/${name}";
+
+      mirrorOutputDir =
+        if instanceCfg.mirror.outputDir != null
+        then instanceCfg.mirror.outputDir
+        else "${workDir}/site";
     in
     {
       name = "discourse-archive-${name}";
@@ -22,6 +27,11 @@ let
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           Type = "oneshot";
           ExecStart = "${instanceCfg.package}/bin/discourse-archive --url ${instanceCfg.url} --target-dir ${instanceCfg.targetDir}"; # note: --debug is broken
+          # Render a static HTML mirror from the freshly written archive.
+          ExecStartPost = lib.optional instanceCfg.mirror.enable (
+            "${instanceCfg.package}/bin/discourse-mirror --url ${instanceCfg.url} --target-dir ${instanceCfg.targetDir} --output-dir ${mirrorOutputDir}"
+            + lib.optionalString (instanceCfg.mirror.siteUrl != null) " --site-url ${instanceCfg.mirror.siteUrl}"
+          );
           Environment = (lib.optionalString instanceCfg.debug "DEBUG=true");
           DynamicUser = true;
           StateDirectory = "discourse-archive/${name}";
@@ -76,6 +86,32 @@ in
           default = "/var/lib/discourse-archive/${name}";
           example = "/var/lib/discourse-archive/example";
           description = "Target directory for the archive.";
+        };
+
+        mirror = {
+          enable = lib.mkEnableOption "rendering a static HTML mirror from the archive after each run";
+
+          outputDir = lib.mkOption {
+            type = lib.types.nullOr lib.types.path;
+            default = null;
+            example = "/var/lib/discourse-archive/example/site";
+            description = ''
+              Directory the rendered static HTML mirror is written to.
+
+              Defaults to a "site" subdirectory of the archive's target
+              directory.
+            '';
+          };
+
+          siteUrl = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            example = "https://archive.example.com";
+            description = ''
+              URL where the mirror itself will be deployed (used for og:url
+              tags). Optional.
+            '';
+          };
         };
 
         timer = {

@@ -16,6 +16,18 @@ python3.pkgs.buildPythonPackage rec {
     hash = "sha256-YIiSFjCu31BQlVeANGp3WhX5MtgcueSQiBDBdmla0cE=";
   };
 
+  # The repo uses a flat layout with multiple top-level modules (archive.py
+  # and mirror.py), which setuptools refuses to auto-discover. Declare the
+  # modules explicitly and expose mirror.py as its own console script.
+  postPatch = ''
+    cat >> pyproject.toml <<'EOF'
+discourse-mirror = "mirror:main"
+
+[tool.setuptools]
+py-modules = ["archive", "mirror"]
+EOF
+  '';
+
   build-system = with python3.pkgs; [
     setuptools
     wheel
