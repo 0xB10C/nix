@@ -3,18 +3,23 @@
 rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
-  version = "73f25b40ce3a1d2ad13bcc3a1ece620724315b17";
+  version = "1b39fb7490e07b167f54491c1f9827b49ef90c7d";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
     rev = version;
-    sha256 = "sha256-Gyt2d0BrPD6PabWT5+zwp70dlKR+CnrNY0f5xMb7djc=";
+    sha256 = "sha256-m1jVHjUzcX8Ousq0R74YefCv4HxGJRJszR9Qq+8Ktlo=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
 
-  cargoHash = "sha256-rRxdMmA+sa5SLKn+T9ofVywEK5pop58JF6afQDwRo1Q=";
+  # during the integration tests, don't try to download a bitcoind binary
+  # use the nix one instead
+  BITCOIND_SKIP_DOWNLOAD = "1";
+  BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
+
+  cargoHash = "sha256-9yP+AXBWkAJLRYOrHlQag1QKuL1IFZK2iXgYstlogr0=";
 
   postInstall = ''
     cp -r www $out/www
