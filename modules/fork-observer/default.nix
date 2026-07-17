@@ -21,10 +21,37 @@ let
         description = "Name of the network.";
       };
 
+      slug = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "mainnet";
+        description =
+          "URL-friendly identifier used for friendly URLs like /mainnet and ?network=mainnet. Must be unique across networks. Derived from the name when unset.";
+      };
+
       description = mkOption {
         type = types.str;
         default = "";
         description = "Description of the network.";
+      };
+
+      countdown = mkOption {
+        type = types.nullOr (types.submodule {
+          options = {
+            height = mkOption {
+              type = types.int;
+              description = "Target block height to count down to.";
+            };
+            label = mkOption {
+              type = types.str;
+              example = "Halving";
+              description = "Label shown in the frontend for the countdown.";
+            };
+          };
+        });
+        default = null;
+        description =
+          "Optional countdown to a specific block height, shown in the frontend. At most one per network.";
       };
 
       minForkHeight = mkOption {
@@ -54,7 +81,7 @@ let
         };
 
         network = mkOption {
-          type = types.enum ["Mainnet" "Testnet" "Signet" ];
+          type = types.enum ["Mainnet" "Testnet" "Signet" "Regtest" ];
           default = "Mainnet";
           description = "Bitcoin Network used for the mining pool identification";
         };
@@ -66,6 +93,7 @@ let
     [[networks]]
     id = ${toString network.id}
     name = "${network.name}"
+    ${optionalString (network.slug != null) ''slug = "${network.slug}"''}
     description = """
       ${network.description}\
     """
@@ -74,6 +102,10 @@ let
     [networks.pool_identification]
       enable = ${boolToString network.poolIdentification.enable}
       network = "${toString network.poolIdentification.network}"
+    ${optionalString (network.countdown != null) ''
+      [networks.countdown]
+        height = ${toString network.countdown.height}
+        label = "${network.countdown.label}"''}
 
     ${concatMapStrings makeNodeConfig network.nodes}
   '';
@@ -121,11 +153,12 @@ let
         description = "Bitcoin Core RPC server password";
       };
 
-      bitcoindRPCCookieFile = mkOption {
-        type = types.path;
+      rpcCookieFile = mkOption {
+        type = types.nullOr types.path;
         default = null;
-        example = "~/.bitcoin/.cookie";
-        description = "Bitcoin Core RPC cookie file";
+        example = "/var/lib/bitcoind/.cookie";
+        description =
+          "Bitcoin Core RPC cookie file. Mutually exclusive with rpcUser/rpcPassword.";
       };
 
       useREST = mkOption {
@@ -133,6 +166,13 @@ let
         default = true;
         description =
           "If the Bitcoin Core REST interface should be used (otherwise slower RPC will be used).";
+      };
+
+      useWaitForNewBlock = mkOption {
+        type = types.bool;
+        default = true;
+        description =
+          "React to new blocks via Bitcoin Core's waitfornewblock RPC long-poll instead of polling every queryInterval seconds. Set to false if waitfornewblock is not on the RPC whitelist, or if a reverse proxy in front of the node kills long-held connections. Only relevant for BitcoinCore.";
       };
 
       implementation = mkOption {
@@ -152,12 +192,13 @@ let
     description = """
       ${node.description}\
     """
-    # TODO: rpc_cookie_file = "~/.bitcoin/.cookie"
     rpc_host = "${node.rpcHost}"
     rpc_port = ${toString node.rpcPort}
+    ${optionalString (node.rpcCookieFile != null) "rpc_cookie_file = \"${node.rpcCookieFile}\""}
     ${optionalString (node.rpcUser != null) "rpc_user = \"${node.rpcUser}\""}
     ${optionalString (node.rpcPassword != null) "rpc_password = \"${node.rpcPassword}\""}
     use_rest = ${boolToString node.useREST}
+    use_waitfornewblock = ${boolToString node.useWaitForNewBlock}
     implementation = "${node.implementation}"
 
   '';
@@ -184,7 +225,8 @@ in {
       queryInterval = mkOption {
         type = types.int;
         default = 10;
-        description = "Second interval in which to query getchaintips.";
+        description =
+          "Second interval for checking for new blocks. For Bitcoin Core nodes using waitfornewblock this is the maximum time between checks (the node reacts to new blocks almost immediately and only falls back to this as an upper bound); for all other backends it is the fixed polling interval.";
       };
 
       address = mkOption {
