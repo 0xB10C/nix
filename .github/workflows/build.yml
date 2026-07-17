@@ -24,6 +24,9 @@ jobs:
           - ubuntu-24.04-arm
           - macos-26-intel
           - macos-26
+        exclude:
+          - nixPath: nixpkgs=channel:nixos-unstable
+            runsOn: macos-26-intel
     runs-on: "${{ matrix.runsOn }}"
     steps:
     - name: Checkout repository
