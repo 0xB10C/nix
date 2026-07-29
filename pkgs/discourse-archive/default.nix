@@ -28,6 +28,11 @@ py-modules = ["archive", "mirror"]
 EOF
   '';
 
+  # We pin to a git revision and use the commit hash as the version, which
+  # isn't a PEP 440 version, so nixpkgs' pythonMetadataCheckPhase can't parse
+  # it and fails. It also couldn't match upstream's pyproject.toml version.
+  dontCheckPythonMetadata = true;
+
   build-system = with python3.pkgs; [
     setuptools
     wheel
