@@ -3,13 +3,13 @@
 rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
-  version = "2e785ec0aeafec49c36e6962b61ace773f58cb68";
+  version = "b26afd1daae83f1ed999a5f3239af10dd5836ab2";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
     rev = version;
-    sha256 = "sha256-PqegZTHOcHeVyJV3uS7NEahpDjd9gJGUrLQh64D0SZY=";
+    sha256 = "sha256-x6nMbah/O5crrJun9QLnVsmg1X+3Vyrc0Ei5O2OyNro=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
