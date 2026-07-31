@@ -73,6 +73,22 @@ let
           "Specification of one or more networks with nodes to connect to.";
       };
 
+      forkObservers = mkOption {
+        type = types.listOf (types.submodule forkObserverOpts);
+        default = [ ];
+        description = ''
+          Other fork-observer instances to import nodes and headers from. The
+          remote data is fetched via the remote's HTTP API every queryInterval
+          seconds and merged into this network's header tree, where the remote
+          nodes show up next to the locally configured ones.
+
+          Only import from an instance trusted as much as one of your own
+          nodes: imported headers are checked to hash to the block hash the
+          remote reports, but heights and miners are taken at face value and
+          are written to the local database permanently.
+        '';
+      };
+
       poolIdentification = {
         enable = mkOption {
           type = types.bool;
@@ -108,6 +124,55 @@ let
         label = "${network.countdown.label}"''}
 
     ${concatMapStrings makeNodeConfig network.nodes}
+    ${concatMapStrings makeForkObserverConfig network.forkObservers}
+  '';
+
+  forkObserverOpts = {
+    options = {
+      name = mkOption {
+        type = types.str;
+        example = "b10c's observer";
+        description = "Name of the remote fork-observer instance.";
+      };
+
+      description = mkOption {
+        type = types.str;
+        default = "";
+        description = "Description of the remote fork-observer instance.";
+      };
+
+      url = mkOption {
+        type = types.str;
+        example = "https://fork-observer.example.com";
+        description = "Base URL of the remote fork-observer instance.";
+      };
+
+      networkId = mkOption {
+        type = types.int;
+        description =
+          "ID of the network to fetch on the remote instance. This is the network id as configured there, not necessarily the local one.";
+      };
+
+      nodeIdOffset = mkOption {
+        type = types.int;
+        example = 1000;
+        description =
+          "Added to the remote node ids to avoid collisions with local node ids. Must be unique per remote instance and larger than every node id used in this network.";
+      };
+    };
+  };
+
+  makeForkObserverConfig = forkObserver: ''
+
+    [[networks.forkobservers]]
+    name = "${forkObserver.name}"
+    description = """
+      ${forkObserver.description}\
+    """
+    url = "${forkObserver.url}"
+    network_id = ${toString forkObserver.networkId}
+    node_id_offset = ${toString forkObserver.nodeIdOffset}
+
   '';
 
   nodeOpts = {
@@ -176,9 +241,27 @@ let
       };
 
       implementation = mkOption {
-        type = types.enum [ "BitcoinCore" "btcd" "esplora" "electrum" ];
+        type = types.enum [
+          "BitcoinCore"
+          "btcd"
+          "esplora"
+          "electrum"
+          "mempoolspace"
+          "block-dn"
+        ];
         default = "BitcoinCore";
-        description = "The Bitcoin implementation to query";
+        description = ''
+          The Bitcoin implementation to query.
+
+          The esplora, electrum and block-dn backends only ever report the
+          active tip, and mempoolspace can't reconstruct fork history on its
+          own. Only add these to a network that already has at least one
+          BitcoinCore (or btcd) node.
+
+          For esplora, mempoolspace and block-dn, set rpcHost to the full API
+          URL (e.g. "https://mempool.space/api" or "https://block-dn.org");
+          rpcPort is unused.
+        '';
       };
 
     };
@@ -270,6 +353,26 @@ in {
   };
 
   config = mkIf cfg.enable {
+    # The same constraints fork-observer checks at startup. Catching them here
+    # turns a crash-looping service into an evaluation error.
+    assertions = concatMap (network:
+      let
+        maxNodeId = foldl' max 0 (map (node: node.id) network.nodes);
+        offsets = map (fo: fo.nodeIdOffset) network.forkObservers;
+      in (map (fo: {
+        assertion = fo.nodeIdOffset > maxNodeId;
+        message =
+          "services.fork-observer: the remote fork-observer '${fo.name}' of network '${network.name}' has a nodeIdOffset of ${
+            toString fo.nodeIdOffset
+          } - it must be larger than every node id in this network (the largest is ${
+            toString maxNodeId
+          }) to avoid id collisions.";
+      }) network.forkObservers) ++ [{
+        assertion = offsets == unique offsets;
+        message =
+          "services.fork-observer: the remote fork-observers of network '${network.name}' must have unique nodeIdOffset values.";
+      }]) cfg.networks;
+
     users = {
       users.forkobserver = {
         isSystemUser = true;
