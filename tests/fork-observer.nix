@@ -102,7 +102,30 @@ in {
               useREST = false;
               implementation = "electrum";
             }
+            {
+              id = 571;
+              name = "mempool.space";
+              description = "This is using the mempool.space backend";
+              rpcHost = "https://mempool.example.com/api";
+              useREST = true;
+              implementation = "mempoolspace";
+            }
+            {
+              id = 572;
+              name = "block-dn";
+              description = "This is using the block-dn backend";
+              rpcHost = "https://block-dn.example.com";
+              useREST = true;
+              implementation = "block-dn";
+            }
           ];
+          forkObservers = [{
+            name = "remote fork-observer";
+            description = "another fork-observer instance";
+            url = "https://fork-observer.example.com";
+            networkId = 1;
+            nodeIdOffset = 1000;
+          }];
         }
       ];
       address = ADDRESS;
@@ -152,7 +175,9 @@ in {
     print("data.json response:", data)
     d = json.loads(data)
 
-    assert len(d["nodes"]) == 4
+    # the remote fork-observer is unreachable in the test, so only the locally
+    # configured nodes show up here
+    assert len(d["nodes"]) == 6
     node = d["nodes"][0]
     assert node["id"] == 567
     assert node["name"] == "Node 567"
