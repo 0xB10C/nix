@@ -66,6 +66,16 @@ let
         description = "Maximum number of recent headers to serve via the API.";
       };
 
+      activityRetentionDays = mkOption {
+        type = types.nullOr types.int;
+        default = null;
+        example = 30;
+        description = ''
+          Overrides services.fork-observer.activity.retentionDays for this
+          network. Only relevant when the activity log is enabled.
+        '';
+      };
+
       nodes = mkOption {
         type = types.listOf (types.submodule nodeOpts);
         default = [ ];
@@ -115,6 +125,8 @@ let
     """
     min_fork_height = ${toString network.minForkHeight}
     max_interesting_heights = ${toString network.maxInterestingHeights}
+    ${optionalString (network.activityRetentionDays != null)
+    "activity_retention_days = ${toString network.activityRetentionDays}"}
     [networks.pool_identification]
       enable = ${boolToString network.poolIdentification.enable}
       network = "${toString network.poolIdentification.network}"
@@ -264,6 +276,17 @@ let
         '';
       };
 
+      activityLog = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Record this node's events (tip changes, reorgs, reachability and
+          version changes, ...) in the activity log. Requires
+          services.fork-observer.activity.enable; without it the node opts in
+          to nothing and fork-observer logs a warning at startup.
+        '';
+      };
+
     };
   };
 
@@ -283,7 +306,17 @@ let
     use_rest = ${boolToString node.useREST}
     use_waitfornewblock = ${boolToString node.useWaitForNewBlock}
     implementation = "${node.implementation}"
+    activity_log = ${boolToString node.activityLog}
 
+  '';
+
+  makeActivityConfig = optionalString cfg.activity.enable ''
+    [activity]
+    database_path = "/var/lib/fork-observer/${cfg.activity.databaseName}"
+    ${optionalString (cfg.activity.archiveDirectory != null)
+    ''archive_directory = "${cfg.activity.archiveDirectory}"''}
+    ${optionalString (cfg.activity.retentionDays != null)
+    "retention_days = ${toString cfg.activity.retentionDays}"}
   '';
 in {
   options = {
@@ -323,6 +356,50 @@ in {
         default = null;
         example = "https://fork-obserser.example.com";
         description = "Base URL of the RSS server. Needed for RSS-spec valid RSS feeds.";
+      };
+
+      activity = {
+        enable = mkEnableOption ''
+          the activity log, a timestamped per-node log of e.g. tip changes,
+          reorgs, new fork tips, invalid blocks and reachability changes. It
+          lives in its own sqlite database and is served via
+          /api/<network_id>/activity.json and the /activity and /playback
+          pages. Nodes opt in individually with activityLog = true'';
+
+        databaseName = mkOption {
+          type = types.str;
+          default = "activity.sqlite";
+          description = ''
+            Name of the activity log sqlite database in
+            /var/lib/fork-observer. Separate from databaseName, which holds
+            the headers.
+          '';
+        };
+
+        archiveDirectory = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          example = "/var/lib/fork-observer/activity-archive";
+          description = ''
+            Directory the retention task writes monthly archive files
+            (activity-archive-YYYY-MM.sqlite) to before purging the archived
+            events from the live database. Required as soon as a retention is
+            configured, so that a retention never deletes events without
+            keeping a copy. The directory is created if it does not exist.
+          '';
+        };
+
+        retentionDays = mkOption {
+          type = types.nullOr types.int;
+          default = null;
+          example = 90;
+          description = ''
+            Events older than this many days are archived into
+            archiveDirectory and then purged from the live database. Networks
+            can override this with their activityRetentionDays. When unset
+            (and no network overrides it), events are kept forever.
+          '';
+        };
       };
 
       networks = mkOption {
@@ -371,7 +448,26 @@ in {
         assertion = offsets == unique offsets;
         message =
           "services.fork-observer: the remote fork-observers of network '${network.name}' must have unique nodeIdOffset values.";
-      }]) cfg.networks;
+      }]) cfg.networks ++ [{
+        # Retention archives before it purges, so a retention without a place
+        # to archive to would delete events without keeping them.
+        assertion = !(cfg.activity.enable && cfg.activity.archiveDirectory
+          == null && (cfg.activity.retentionDays != null
+            || any (network: network.activityRetentionDays != null)
+            cfg.networks));
+        message =
+          "services.fork-observer: activity.retentionDays (or a network's activityRetentionDays) is set, so activity.archiveDirectory must be set as well - old events are archived there before they are purged.";
+      }];
+
+    warnings = let
+      optedIn = concatMap (network:
+        map (node:
+          "'${node.name}' (id ${toString node.id}) of network '${network.name}'")
+        (filter (node: node.activityLog) network.nodes)) cfg.networks;
+    in optional (!cfg.activity.enable && optedIn != [ ])
+    "services.fork-observer: services.fork-observer.activity.enable is false, so no activity is recorded for the nodes that set activityLog = true: ${
+      concatStringsSep ", " optedIn
+    }.";
 
     users = {
       users.forkobserver = {
@@ -384,7 +480,9 @@ in {
     };
 
     systemd.tmpfiles.rules =
-      [ "d '/var/lib/fork-observer/' 0770 'forkobserver' 'forkobserver' - -" ];
+      [ "d '/var/lib/fork-observer/' 0770 'forkobserver' 'forkobserver' - -" ]
+      ++ optional (cfg.activity.enable && cfg.activity.archiveDirectory != null)
+      "d '${cfg.activity.archiveDirectory}' 0770 'forkobserver' 'forkobserver' - -";
 
     systemd.services.fork-observer = {
       description = "fork-observer";
@@ -404,6 +502,7 @@ in {
         footer_html = """
         ${cfg.footer}
         """
+        ${makeActivityConfig}
         ${concatMapStrings makeNetworkConfig cfg.networks}
 
         EOF'';
@@ -424,7 +523,9 @@ in {
         MemoryDenyWriteExecute = true;
         ConfigurationDirectory = "fork-observer"; # /etc/fork-observer
         ConfigurationDirectoryMode = 710;
-        ReadWriteDirectories = "/var/lib/fork-observer";
+        ReadWriteDirectories = [ "/var/lib/fork-observer" ]
+          ++ optional (cfg.activity.enable && cfg.activity.archiveDirectory
+            != null) (toString cfg.activity.archiveDirectory);
         DynamicUser = true;
         User = "forkobserver";
         Group = "forkobserver";
