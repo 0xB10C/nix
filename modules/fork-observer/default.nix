@@ -514,7 +514,7 @@ in {
         // {
         ExecStart = "${cfg.package}/bin/fork-observer";
         Environment =
-          "CONFIG_FILE=/etc/fork-observer/config.toml RUST_LOG=info";
+          "CONFIG_FILE=/etc/fork-observer/config.toml RUST_LOG=debug";
         Restart = "always";
         # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
         RestartSec = 30;
