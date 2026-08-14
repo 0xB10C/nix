@@ -24,6 +24,11 @@ in
             siteUrl = "https://archive.example.com";
           };
 
+          fullResync = {
+            enable = true;
+            interval = "30d";
+          };
+
           timer = {
             enable = true;
             # set this for the tests, but make sure it never fires
@@ -99,6 +104,32 @@ in
     print(machine.succeed(f"ls -la {site}"))
 
     machine.succeed(f"stat {site}/index.html")
+
+    # the first run only records the baseline, it must not have forced a
+    # full re-sync
+    marker = f"{dir}/.last-full-resync"
+    machine.succeed(f"stat {marker}")
+
+    # a run well within the interval keeps the metadata around
+    machine.succeed(f"touch -d '1 hour ago' {marker}")
+    machine.systemctl("start discourse-archive-test.service")
+    machine.succeed(f"stat {dir}/.metadata.json")
+    machine.succeed(f"[ $(stat -c %Y {marker}) -lt $(date -d '30 minutes ago' +%s) ]")
+
+    # once the interval has passed, .metadata.json is removed before the run
+    # and the marker is bumped
+    machine.succeed(f"touch -d '60 days ago' {marker}")
+    old_metadata = machine.succeed(f"cat {dir}/.metadata.json")
+    machine.systemctl("start discourse-archive-test.service")
+
+    journal = machine.succeed("journalctl -u discourse-archive-test.service --no-pager")
+    assert "to force a full re-sync" in journal, journal
+
+    machine.succeed(f"[ $(stat -c %Y {marker}) -gt $(date -d '5 minutes ago' +%s) ]")
+
+    # the run recreated it, and archived the same posts again
+    new_metadata = machine.succeed(f"cat {dir}/.metadata.json")
+    assert json.loads(new_metadata) == json.loads(old_metadata), (old_metadata, new_metadata)
 
   '';
 }
