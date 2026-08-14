@@ -5,7 +5,7 @@ with lib;
 let
   pkg = (pkgs.callPackage ../.. { }).stratum-observer;
   cfg = config.services.stratum-observer;
-  #hardening = import ../systemd-hardening.nix { };
+  hardening = import ../hardening.nix;
 
   poolOptions = {
     options = {
@@ -133,7 +133,7 @@ in {
 
         EOF'';
 
-      serviceConfig = {
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
         ExecStart = "${cfg.package}/bin/stratum-observer";
         Environment =
           "CONFIG_FILE=/etc/stratum-observer/config.toml RUST_LOG=${cfg.logLevel}";
