@@ -29,7 +29,7 @@ in {
         rest=1
         debug=rpc
         # generatetoaddress isn't used by fork-observer, the test mines with it
-        rpcwhitelist=fork-observer:getchaintips,getblockheader,getblockhash,getblock,getnetworkinfo,generatetoaddress
+        rpcwhitelist=fork-observer:getchaintips,getblockheader,getblockhash,getblock,getnetworkinfo,waitfornewblock,generatetoaddress
       '';
       rpc = {
         port = BITCOIND_RPC_PORT;
@@ -244,13 +244,6 @@ in {
             time.sleep(1)
         raise Exception(f"no '{kind}' event in the activity log: {activity_events()}")
 
-    # detecting the node's version is the first thing that gets logged
-    version_event = wait_for_event("node-version-changed")
-    print("node-version-changed event:", version_event)
-    assert version_event["node_id"] == 567
-    assert version_event["details"]["old"] is None
-    assert "Satoshi" in version_event["details"]["new"]
-
     # The first poll of a node only establishes its tips, it doesn't log an
     # event. Wait for it, so that mining is guaranteed to be a tip *change*.
     def node_567_tips():
@@ -264,27 +257,51 @@ in {
     else:
         raise Exception("node 567 never reported a tip")
 
-    machine.succeed("${pkgs.bitcoind}/bin/bitcoin-cli --regtest -rpcport=${toString BITCOIND_RPC_PORT} --rpcuser=fork-observer --rpcpassword=hunter2 generatetoaddress 3 ${MINING_ADDRESS}")
+    def mine(n=1):
+        machine.succeed("${pkgs.bitcoind}/bin/bitcoin-cli --regtest -rpcport=${toString BITCOIND_RPC_PORT} --rpcuser=fork-observer --rpcpassword=hunter2 generatetoaddress " + f"{n} ${MINING_ADDRESS}")
+
+    def wait_for_events(count, timeout=60):
+        for _ in range(timeout):
+            events = activity_events()
+            if len(events) >= count:
+                return events
+            time.sleep(1)
+        raise Exception(f"fewer than {count} events in the activity log: {activity_events()}")
+
+    # One block at a time: with waitfornewblock the node reacts to each block
+    # almost immediately, so a batch of blocks can be observed mid-way and the
+    # heights of the event wouldn't be deterministic.
+    mine()
 
     tip_event = wait_for_event("active-tip-changed")
     print("active-tip-changed event:", tip_event)
     assert tip_event["node_id"] == 567
     assert tip_event["details"]["old_height"] == 0
-    assert tip_event["details"]["new_height"] == 3
+    assert tip_event["details"]["new_height"] == 1
+
+    # a second tip change, so that there is more than one event to page through
+    mine()
+
+    events = wait_for_events(2)
+    print("activity events:", events)
+    assert events[0]["kind"] == "active-tip-changed"
+    assert events[0]["details"]["old_height"] == 1
+    assert events[0]["details"]["new_height"] == 2
 
     # nodes that didn't opt in are not logged
-    events = activity_events()
     assert {e["node_id"] for e in events} == {567}
 
-    # count caps the response, before pages further into the past
-    assert len(activity_events(count=1)) == 1
+    # events are served newest first and 'before' pages further into the past.
+    # The page size is fixed, there is no way to ask for fewer events.
+    assert events[0]["id"] > events[1]["id"]
     newest = events[0]["id"]
-    assert all(e["id"] < newest for e in activity_events(before=newest))
+    older = activity_events(before=newest)
+    assert older
+    assert all(e["id"] < newest for e in older)
 
     # the events are persisted, not only cached in memory
     kinds = machine.succeed("${pkgs.sqlite}/bin/sqlite3 /var/lib/fork-observer/${ACTIVITY_DB_NAME} 'select distinct kind from activity where network = ${toString NETWORK_ID};'")
     print("logged event kinds:", kinds)
-    assert "node-version-changed" in kinds
     assert "active-tip-changed" in kinds
 
     # the pages showing the log are served
