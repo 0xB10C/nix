@@ -5,6 +5,41 @@ let
   pkg = (pkgs.callPackage ../.. { }).discourse-archive;
   hardening = import ../hardening.nix;
 
+  # discourse-archive only fetches posts newer than the last_sync_date it
+  # records in .metadata.json, so topics that were unlisted/hidden while a
+  # previous run happened and are visible again now are never picked up.
+  # Removing .metadata.json makes the next run re-fetch everything.
+  mkFullResyncScript = name: instanceCfg: workDir:
+    pkgs.writeShellScript "discourse-archive-${name}-full-resync" ''
+      set -eu
+
+      metadata="${workDir}/.metadata.json"
+      marker="${workDir}/.last-full-resync"
+
+      # systemd-analyze prints the timespan in microseconds on its second
+      # line, labelled "μs:" or, depending on the locale, "us:".
+      interval=$(( $(${config.systemd.package}/bin/systemd-analyze timespan ${
+        lib.escapeShellArg instanceCfg.fullResync.interval
+      } | ${pkgs.gnused}/bin/sed -n '/s:/ { s/[^0-9]//g; p; q; }') / 1000000 ))
+
+      if [ ! -e "$marker" ]; then
+        # First run since full re-syncs were enabled. Treat the archive as it
+        # is now as the baseline rather than forcing an immediate full re-sync.
+        ${pkgs.coreutils}/bin/touch "$marker"
+        exit 0
+      fi
+
+      age=$(( $(${pkgs.coreutils}/bin/date +%s) - $(${pkgs.coreutils}/bin/stat -c %Y "$marker") ))
+
+      if [ "$age" -ge "$interval" ]; then
+        echo "last full re-sync was ''${age}s ago (interval ''${interval}s), removing $metadata to force a full re-sync"
+        ${pkgs.coreutils}/bin/rm -f "$metadata"
+        ${pkgs.coreutils}/bin/touch "$marker"
+      else
+        echo "last full re-sync was ''${age}s ago (interval ''${interval}s), doing an incremental sync"
+      fi
+    '';
+
   mkService = name: instanceCfg:
     let
 
@@ -26,6 +61,9 @@ let
 
         serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
           Type = "oneshot";
+          # Force a full re-sync every now and then, see mkFullResyncScript.
+          ExecStartPre = lib.optional instanceCfg.fullResync.enable
+            (mkFullResyncScript name instanceCfg workDir);
           ExecStart = "${instanceCfg.package}/bin/discourse-archive --url ${instanceCfg.url} --target-dir ${instanceCfg.targetDir}"; # note: --debug is broken
           # Render a static HTML mirror from the freshly written archive.
           ExecStartPost = lib.optional instanceCfg.mirror.enable (
@@ -110,6 +148,37 @@ in
             description = ''
               URL where the mirror itself will be deployed (used for og:url
               tags). Optional.
+            '';
+          };
+        };
+
+        fullResync = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            example = false;
+            description = ''
+              Periodically force a full re-sync instead of only fetching posts
+              newer than the last sync.
+
+              Incremental syncs miss topics that were unlisted or hidden while
+              an earlier run happened and have become visible again since. A
+              full re-sync picks those up.
+            '';
+          };
+
+          interval = lib.mkOption {
+            type = lib.types.str;
+            default = "30d";
+            example = "12h";
+            description = ''
+              How much time has to pass between two full re-syncs, as a
+              systemd.time time span.
+
+              The time of the last full re-sync is tracked in a
+              ".last-full-resync" file in the target directory. The first run
+              after enabling this only creates that file, so enabling the
+              option does not trigger an immediate full re-sync.
             '';
           };
         };
