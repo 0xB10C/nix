@@ -8,6 +8,9 @@ let
   PEER_OBSERVER_P2PEXPORTER_PORT = 10070;
   PEER_OBSERVER_IPC_METRICS_PORT = 10100;
   PEER_OBSERVER_ARCHIVER_DIR = "/data/archiver";
+  # directory with the Grafana dashboards of the metrics tool
+  PEER_OBSERVER_DASHBOARDS = (pkgs.callPackage ./.. { }).peer-observer.metrics-dashboards;
+  GRAFANA_PORT = 3000;
   NATS_PORT = 4222;
   BITCOIND_PORT = 12345;
   BITCOIND2_PORT = 23456;
@@ -22,8 +25,8 @@ in {
     ];
 
     virtualisation.cores = 1;
-    # extra memory needed for peer-observer extractor huge-msg table
-    virtualisation.memorySize = 3072;
+    # extra memory needed for peer-observer extractor huge-msg table and Grafana
+    virtualisation.memorySize = 4096;
 
     services.bitcoind."regtest" = {
       enable = true;
@@ -227,9 +230,42 @@ in {
         };
       };
     };
+
+    # Provision the Grafana dashboards shipped with the peer-observer metrics tool.
+    # This makes sure the dashboards are valid and, for example, don't contain
+    # duplicate dashboard UIDs (Grafana refuses to provision these).
+    services.grafana = {
+      enable = true;
+      settings = {
+        server = {
+          http_addr = "127.0.0.1";
+          http_port = GRAFANA_PORT;
+        };
+        # The secret key will be world-readable in the /nix/store.
+        # This is fine for tests, but use proper secret management in prod!
+        security.secret_key = "peer-observer-test";
+        # the test VM has no network access
+        analytics = {
+          reporting_enabled = false;
+          check_for_updates = false;
+        };
+      };
+      provision = {
+        enable = true;
+        dashboards.settings.providers = [{
+          name = "peer-observer";
+          options = {
+            path = PEER_OBSERVER_DASHBOARDS;
+            # the dashboards are in sub-directories (e.g. 'playlist/')
+            foldersFromFilesStructure = true;
+          };
+        }];
+      };
+    };
   };
 
   testScript = ''
+    import json
     import time
 
     # wait util we can execute command to start with the test.
@@ -321,5 +357,45 @@ in {
     time.sleep(5)
     print("Checking if the ebpf extractor has crashed while trying to attach to a tracepoint..")
     machine.wait_for_unit("peer-observer-ebpf-extractor.service", timeout=2)
+
+    # Grafana provisions the dashboards of the metrics tool during startup.
+    machine.wait_for_unit("grafana.service", timeout=120)
+    machine.wait_for_open_port(${toString GRAFANA_PORT}, timeout=120)
+
+    print("Checking that Grafana finished provisioning the dashboards..")
+    machine.wait_until_succeeds(
+        "journalctl --unit grafana.service --grep 'finished to provision dashboards'",
+        timeout=120,
+    )
+    print("OK!")
+
+    # Grafana only logs a warning (and then skips writing the dashboards) when, for
+    # example, two dashboards share the same UID or title. Make sure none of these
+    # warnings show up in the log.
+    print("Checking that Grafana didn't log any dashboard provisioning problems..")
+    for problem in [
+        "the same UID is used more than once",
+        "dashboard title is not unique in folder",
+        "no database write permissions because of duplicates",
+        "failed to save dashboard",
+        "failed to load dashboard",
+        "failed to walk provisioned dashboards",
+        "Failed to provision dashboard",
+    ]:
+        machine.fail(f"journalctl --unit grafana.service --grep '{problem}'")
+    print("OK!")
+
+    # As an extra check, compare the number of provisioned dashboards to the number
+    # of dashboard files. Grafana skips (and only warns about) duplicate dashboards.
+    dashboard_files = int(machine.succeed("find ${PEER_OBSERVER_DASHBOARDS} -type f -name '*.json' | wc -l"))
+    dashboards = json.loads(machine.succeed(
+        "curl --fail --silent --user admin:admin 'http://127.0.0.1:${toString GRAFANA_PORT}/api/search?type=dash-db&limit=5000'"
+    ))
+    print(f"provisioned {len(dashboards)} of {dashboard_files} dashboards:")
+    for dashboard in dashboards:
+        print(" -", dashboard["uid"], dashboard["title"])
+    assert dashboard_files > 0
+    assert len(dashboards) == dashboard_files
+    print("OK!")
   '';
 }
