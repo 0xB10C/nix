@@ -9,13 +9,13 @@
 rustPlatform.buildRustPackage rec {
   name = "peer-observer";
   pname = "peer-observer";
-  version = "7eba12aa00f94dfeb1d0a3794c08f89791d2f711";
+  version = "52fd8138c4030737d73f15dc461bcaab151fb62f";
 
   src = pkgs.fetchFromGitHub {
     owner = "peer-observer";
     repo = "peer-observer";
     rev = version;
-    sha256 = "sha256-LDsEfCWc0JwbyE1sSN82Ej16QrcrBKUUFxHU00T/e+s=";
+    sha256 = "sha256-TOFdAglZNtOnd/fW7D8ebcV4MQz72LcmMf+m4H10kRw=";
   };
 
   # needed for the archiver to know the GIT_HASH
@@ -55,7 +55,7 @@ rustPlatform.buildRustPackage rec {
       "--exclude log-extractor"
   ];
 
-  cargoHash = "sha256-mKA+jrEZ0I4Y+Rhs1u5JZBKPSa5vMeVXXVuGnqLxWsA=";
+  cargoHash = "sha256-SI50I6ntw4IgFL+9ePDkofzxj51AndYBjfbNg/pII+M=";
 
   # Set the path of the Linux kernel headers for the ebpf-extractor.
   KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing
