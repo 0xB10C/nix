@@ -461,7 +461,13 @@ in {
             "${pkgs.coreutils}/bin/mkfifo /var/lib/peer-observer/log-extractor-debug-log.pipe"
             "${pkgs.coreutils}/bin/chown peerobserver:peerobserver /var/lib/peer-observer/log-extractor-debug-log.pipe"
           ];
-          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.coreutils}/bin/tail -f ${cfg.extractors.log.debugLog} > /var/lib/peer-observer/log-extractor-debug-log.pipe'";
+          # Use `tail -F` (follow by name, with retry) rather than `tail -f`.
+          # `tail -f` follows the inode, so it keeps reading the old, renamed
+          # file after a log rotation that replaces debug.log (e.g. a
+          # rename + SIGHUP scheme where bitcoind reopens a fresh debug.log),
+          # silently missing all new lines. `tail -F` drains the rotated-away
+          # file and then reopens the new debug.log at the same path.
+          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.coreutils}/bin/tail -F ${cfg.extractors.log.debugLog} > /var/lib/peer-observer/log-extractor-debug-log.pipe'";
           Restart = "always";
           # restart every 30 seconds but fail if we do more than 3 restarts in 120 sec
           RestartSec = 30;
