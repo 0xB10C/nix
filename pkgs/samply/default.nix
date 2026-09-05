@@ -6,16 +6,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "samply";
-  version = "0-unstable-2026-05-13";
+  version = "samply-symbols-v0.24.1-unstable-2026-08-27";
 
   src = fetchFromGitHub {
     owner = "mstange";
     repo = "samply";
-    rev = "d31a3e9ed59f06d309d6984455c824a03a15f081";
-    hash = "sha256-wGYN38owi5ryz9bQX5BOD7D91eYxUE9R7nsSXGIyiLM=";
+    rev = "a2252a6ef2ec2c9c77337b71644be58c93c7c6a8";
+    hash = "sha256-uaCPOtiF4hPbCXDEOllpH4r9OE/+9igu4dbMjueu5rc=";
   };
 
-  cargoHash = "sha256-NFctaIv1bAnW62yE030HJRihVzidabrK3DWDZnxt3Zg=";
+  cargoHash = "sha256-ph7RSTyjNJjboLM2Eq9AIeS91rrwkWUSMINknqOIFE4=";
 
   meta = {
     description = "Command line profiler for macOS and Linux";
