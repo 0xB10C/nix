@@ -216,16 +216,40 @@ in {
           };
         };
 
-        archiver = {
-          enable = true;
-          maxFileSize = 100;
-          compressionLevel = 1;
-          outputDir = PEER_OBSERVER_ARCHIVER_DIR;
-          baseName = "peer-observer-test";
-          nats = {
-            address = "127.0.0.1:${toString NATS_PORT}";
-            username = "peerobserver-tool";
-            password = "2345";
+        # Two archiver instances deliberately sharing one output directory: the
+        # archives are separated by their file name prefix, which is the
+        # attribute name. 'archive-one' leaves 'events' at null and
+        # 'archive-two' sets it, so both branches of the ExecStart event-flag
+        # interpolation are exercised.
+        archivers = {
+          archive-one = {
+            enable = true;
+            maxFileSize = 100;
+            compressionLevel = 1;
+            outputDir = PEER_OBSERVER_ARCHIVER_DIR;
+            nats = {
+              address = "127.0.0.1:${toString NATS_PORT}";
+              username = "peerobserver-tool";
+              password = "2345";
+            };
+          };
+
+          archive-two = {
+            enable = true;
+            maxFileSize = 100;
+            compressionLevel = 3;
+            outputDir = PEER_OBSERVER_ARCHIVER_DIR;
+            events = [
+              "messages" "connections" "ipc-extractor"
+              "addr-relay" "connections-with-handshakes"
+            ];
+            lowData = true;
+            extraArgs = "--log-level DEBUG";
+            nats = {
+              address = "127.0.0.1:${toString NATS_PORT}";
+              username = "peerobserver-tool";
+              password = "2345";
+            };
           };
         };
       };
@@ -347,11 +371,106 @@ in {
     machine.systemctl("start peer-observer-tool-alerts.service")
     machine.wait_for_unit("peer-observer-tool-alerts.service", timeout=15)
 
-    machine.systemctl("start peer-observer-tool-archiver.service")
-    machine.wait_for_unit("peer-observer-tool-archiver.service", timeout=15)
-    archiver_dir = machine.succeed("ls -l ${PEER_OBSERVER_ARCHIVER_DIR}")
-    print("archiver_dir:", archiver_dir)
-    assert len(archiver_dir) != 0
+    archivers = ["archive-one", "archive-two"]
+
+    for archiver in archivers:
+        unit = f"peer-observer-tool-archiver-{archiver}.service"
+        machine.systemctl(f"start {unit}")
+        machine.wait_for_unit(unit, timeout=15)
+
+    # maxFileSize is 100 bytes, so a second file per prefix means the archiver
+    # actually received and wrote events. That in turn means all --nats-*
+    # arguments made it onto the command line.
+    # Both instances write into the same directory. Each uses its attribute name
+    # as --base-name, so its archives carry that prefix.
+    for archiver in archivers:
+        machine.wait_until_succeeds(
+            f"test $(find ${PEER_OBSERVER_ARCHIVER_DIR} -maxdepth 1 -type f "
+            f"-name '{archiver}.*.bin*' | wc -l) -ge 1",
+            timeout=30,
+        )
+
+    archiver_files = machine.succeed("ls -1 ${PEER_OBSERVER_ARCHIVER_DIR}").split()
+    print("archiver files:", archiver_files)
+    assert all(
+        any(f.startswith(f"{a}.") for a in archivers) for f in archiver_files
+    ), f"unexpected files in the archiver output directory: {archiver_files}"
+
+    # The archiver logs the NATS user it connects with. Asserting on it catches a
+    # regression where a missing line continuation in the ExecStart truncated the
+    # command line and silently dropped every --nats-* argument, leaving the
+    # archiver connecting anonymously.
+    for archiver in archivers:
+        machine.succeed(
+            f"journalctl -u peer-observer-tool-archiver-{archiver}.service --no-pager "
+            f"| grep -F 'Connecting to NATS-server 127.0.0.1:${toString NATS_PORT} with user=peerobserver-tool'"
+        )
+
+    # 'archive-two' restricts the archived categories, which exercises the event
+    # flag interpolation in the ExecStart.
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -E 'archiving P2P messages: +true'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -E 'archiving mempool events: +false'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -E 'archiving addr-relay messages: +true'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -E 'archiving connections-with-handshakes: +true'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -E 'archiving ipc_extractor events: +true'"
+    )
+    # lowData is per instance and only passed when enabled
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -F 'archiving in low-data mode: true'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-one.service --no-pager "
+        "| grep -F 'archiving in low-data mode: false'"
+    )
+    # extraArgs reaches the command line, and the archiver acts on it: only
+    # archive-two was given --log-level DEBUG, so only it logs at DEBUG.
+    machine.succeed(
+        "systemctl show -p ExecStart peer-observer-tool-archiver-archive-two.service "
+        "| grep -F -- '--log-level DEBUG'"
+    )
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-two.service --no-pager "
+        "| grep -F 'DEBUG'"
+    )
+    machine.fail(
+        "journalctl -u peer-observer-tool-archiver-archive-one.service --no-pager "
+        "| grep -F 'DEBUG'"
+    )
+    # the compression level is per instance
+    machine.succeed(
+        "systemctl show -p ExecStart peer-observer-tool-archiver-archive-one.service "
+        "| grep -F -- '--compression-level 1'"
+    )
+    machine.succeed(
+        "systemctl show -p ExecStart peer-observer-tool-archiver-archive-two.service "
+        "| grep -F -- '--compression-level 3'"
+    )
+    # 'archive-one' leaves 'events' at null, so it archives everything.
+    machine.succeed(
+        "journalctl -u peer-observer-tool-archiver-archive-one.service --no-pager "
+        "| grep -F 'archiving all events: true'"
+    )
+
+    archiver_files = machine.succeed("ls -1 ${PEER_OBSERVER_ARCHIVER_DIR}").split()
+    print("archiver files:", archiver_files)
+    assert all(
+        any(f.startswith(f"{a}.") for a in archivers) for f in archiver_files
+    ), f"unexpected files in the archiver output directory: {archiver_files}"
 
     # wait for the ebpf-extractor again, since it might fail when attaching the a tracepoint
     time.sleep(5)
