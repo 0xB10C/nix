@@ -46,6 +46,126 @@ let
     description = "Configuration for the connection to the NATS server.";
   };
 
+  archiverOptions = {
+    options = {
+      enable = mkEnableOption "this event archiver instance";
+
+      nats = natsOpt;
+
+      outputDir = mkOption {
+        type = types.str;
+        default = "/var/lib/peer-observer/archiver/";
+        example = "/data/peer-observer-archives/";
+        description = ''
+          The directory this archiver writes the archives to. Multiple archiver
+          instances may share the same directory: their archives are separated
+          by the file name prefix, which is the instance's attribute name.
+        '';
+      };
+
+      maxFileSize = mkOption {
+        type = types.ints.positive;
+        default = 1073741824;
+        example = 524288000; # 500 MB
+        description = "Maximum compressed output size in bytes before rotation";
+      };
+
+      compressionLevel = mkOption {
+        type = types.ints.between 0 22;
+        default = 18;
+        example = 3;
+        description = "Zstd compression level (0 = no compression, 1-22)";
+      };
+
+      events = mkOption {
+        type = types.nullOr (types.listOf (types.enum [
+          "messages" "connections" "mempool" "validation"
+          "rpc" "p2p-extractor" "log-extractor" "ipc-extractor"
+          "addr-relay" "connections-with-handshakes"
+        ]));
+        default = null;
+        example = [ "messages" "connections" ];
+        description = ''
+          Which event categories to archive. When `null` (the default),
+          no selection flags are passed and the archiver records all
+          categories. Set to an explicit non-empty list to restrict.
+
+          The entries are additive and combine freely. `addr-relay` archives
+          the address-relay P2P messages (getaddr, addr, addrv2) and
+          `connections-with-handshakes` archives P2P connection events
+          together with the version messages of their handshake.
+        '';
+      };
+
+      lowData = mkOption {
+        type = types.bool;
+        default = false;
+        example = true;
+        description = ''
+          Archive P2P messages without their raw transaction data. Transactions
+          keep their txid and wtxid, blocks keep only their header. The other
+          enabled event categories are archived unchanged.
+
+          This only applies to P2P messages, so `events` must contain
+          `"messages"`.
+        '';
+      };
+
+      extraArgs = mkOption {
+        type = types.str;
+        default = "";
+        example = "--log-level DEBUG";
+        description = ''
+          Extra arguments to pass to the peer-observer archiver. Appended after
+          the arguments generated from the options above, so this can reach
+          flags the module does not model.
+        '';
+      };
+    };
+  };
+
+  eachArchiver = filterAttrs (_: instanceCfg: instanceCfg.enable) cfg.tools.archivers;
+
+  mkArchiverService = instanceName: instanceCfg:
+    nameValuePair "peer-observer-tool-archiver-${instanceName}" {
+      description = "peer-observer archiver ${instanceName}";
+      wantedBy = [ "multi-user.target" ];
+      after = ["network-online.target" cfg.dependsOnNATSService ];
+      wants = ["network-online.target" cfg.dependsOnNATSService ];
+      startLimitIntervalSec = 120;
+      serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
+        ExecStart = ''
+          ${cfg.package}/bin/archiver \
+          --output-dir ${instanceCfg.outputDir} \
+          --base-name ${instanceName} \
+          --max-file-size ${toString instanceCfg.maxFileSize} \
+          --compression-level ${toString instanceCfg.compressionLevel} \
+          ${lib.escapeShellArgs (
+            lib.optionals (instanceCfg.events != null)
+              (map (e: "--${e}") instanceCfg.events)
+          )} \
+          ${optionalString instanceCfg.lowData "--low-data"} \
+          --nats-address ${instanceCfg.nats.address} \
+          ${optionalString (instanceCfg.nats.username != null) "--nats-username ${instanceCfg.nats.username}" } \
+          ${optionalString (instanceCfg.nats.password != null) "--nats-password ${instanceCfg.nats.password}" } \
+          ${optionalString (instanceCfg.nats.passwordFile != null) "--nats-password-file ${instanceCfg.nats.passwordFile}" } \
+          ${instanceCfg.extraArgs}'';
+        Environment = "RUST_LOG=info";
+        Restart = "always";
+        # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
+        RestartSec = 30;
+        StartLimitBurst = 3;
+        PermissionsStartOnly = true;
+        MemoryDenyWriteExecute = true;
+        ConfigurationDirectory = "peer-observer";
+        WorkingDirectory = instanceCfg.outputDir;
+        ReadWriteDirectories = instanceCfg.outputDir;
+        DynamicUser = true;
+        User = "peerobserver";
+        Group = "peerobserver";
+      };
+    };
+
 in {
 
   options = {
@@ -257,53 +377,21 @@ in {
           nats = natsOpt;
         };
 
-        archiver = {
-          enable = mkEnableOption "event archiver";
-
-          nats = natsOpt;
-
-          outputDir = mkOption {
-            type = types.str;
-            default = "/var/lib/peer-observer/archiver/";
-            example = "/data/peer-observer-archives/";
-            description = "The directory the archiver writes the archives to.";
-          };
-
-          baseName = mkOption {
-            type = types.str;
-            default = "archive";
-            example = "demo-peer-observer";
-            description = "Base name for archive files (e.g., 'mainnet' -> 'mainnet.<timestamp>.bin.zst')";
-          };
-
-          maxFileSize = mkOption {
-            type = types.ints.positive;
-            default = 1073741824;
-            example = 524288000; # 500 MB
-            description = "Maximum compressed output size in bytes before rotation";
-          };
-
-          compressionLevel = mkOption {
-            type = types.ints.between 0 22;
-            default = 22;
-            example = 3;
-            description = "Zstd compression level (0 = no compression, 1-22)";
-          };
-
-          events = mkOption {
-            type = types.nullOr (types.listOf (types.enum [
-              "messages" "connections" "mempool" "validation"
-              "rpc" "p2p-extractor" "log-extractor"
-            ]));
-            default = null;
-            example = [ "messages" "connections" ];
-            description = ''
-              Which event categories to archive. When `null` (the default),
-              no selection flags are passed and the archiver records all
-              categories. Set to an explicit non-empty list to restrict.
-            '';
-          };
-
+        archivers = mkOption {
+          type = types.attrsOf (types.submodule archiverOptions);
+          default = { };
+          example = literalExpression ''
+            {
+              mainnet = { enable = true; events = [ "messages" "connections" ]; };
+            }
+          '';
+          description = ''
+            One or more peer-observer event archiver instances. The attribute
+            name is used as the archiver's `--base-name`, i.e. as the prefix of
+            the archive file names (`<name>.<timestamp>.bin.zst`), and as part
+            of the systemd unit name
+            (`peer-observer-tool-archiver-<name>.service`).
+          '';
         };
       };
 
@@ -319,8 +407,8 @@ in {
     cfg.tools.addrConnectivity.enable ||
     cfg.tools.websocket.enable ||
     cfg.tools.alerts.enable ||
-    cfg.tools.archiver.enable
-  ) {
+    eachArchiver != { }
+  ) (mkMerge [ {
     users = {
       users.peerobserver = {
         isSystemUser = true;
@@ -329,11 +417,13 @@ in {
       groups.peerobserver = { };
     };
 
-    systemd.tmpfiles.rules = [
+    # Archiver instances may share an outputDir, so deduplicate the rules;
+    # systemd-tmpfiles warns about and ignores duplicate lines.
+    systemd.tmpfiles.rules = unique ([
       "d '/var/lib/peer-observer/' 0770 'peerobserver' 'peerobserver' - -"
-    ] ++ lib.optionals cfg.tools.archiver.enable [
-      "d '${cfg.tools.archiver.outputDir}' 0770 'peerobserver' 'peerobserver' - -"
-    ];
+    ] ++ mapAttrsToList (_: instanceCfg:
+      "d '${instanceCfg.outputDir}' 0770 'peerobserver' 'peerobserver' - -"
+    ) eachArchiver);
 
     # before we can start the peer-observer, wait until the PID file has been created by bitcoind
     # in the RuntimeDirectory, and fix up socket permissions for the ipc-extractor
@@ -658,43 +748,30 @@ in {
         };
       };
 
-      systemd.services.peer-observer-tool-archiver = mkIf cfg.tools.archiver.enable {
-        description = "peer-observer archiver";
-        wantedBy = [ "multi-user.target" ];
-        after = ["network-online.target" cfg.dependsOnNATSService ];
-        wants = ["network-online.target" cfg.dependsOnNATSService ];
-        startLimitIntervalSec = 120;
-        serviceConfig = hardening.default // hardening.allowAllIPAddresses // {
-          ExecStart = ''
-            ${cfg.package}/bin/archiver \
-            --output-dir ${cfg.tools.archiver.outputDir} \
-            --base-name ${cfg.tools.archiver.baseName} \
-            --max-file-size ${toString cfg.tools.archiver.maxFileSize} \
-            --compression-level ${toString cfg.tools.archiver.compressionLevel} \
-            ${lib.escapeShellArgs (
-              lib.optionals (cfg.tools.archiver.events != null)
-                (map (e: "--${e}") cfg.tools.archiver.events)
-            )}
-            --nats-address ${cfg.tools.archiver.nats.address} \
-            ${optionalString (cfg.tools.archiver.nats.username != null) "--nats-username ${cfg.tools.archiver.nats.username}" } \
-            ${optionalString (cfg.tools.archiver.nats.password != null) "--nats-password ${cfg.tools.archiver.nats.password}" } \
-            ${optionalString (cfg.tools.archiver.nats.passwordFile != null) "--nats-password-file ${cfg.tools.archiver.nats.passwordFile}" }
-          '';
-          Environment = "RUST_LOG=info";
-          Restart = "always";
-          # restart every 30 seconds. Limit this to 3 times in 'startLimitIntervalSec'
-          RestartSec = 30;
-          StartLimitBurst = 3;
-          PermissionsStartOnly = true;
-          MemoryDenyWriteExecute = true;
-          ConfigurationDirectory = "peer-observer";
-          WorkingDirectory = cfg.tools.archiver.outputDir;
-          ReadWriteDirectories = cfg.tools.archiver.outputDir;
-          DynamicUser = true;
-          User = "peerobserver";
-          Group = "peerobserver";
-        };
-      };
+  } {
+    assertions = flatten (mapAttrsToList (instanceName: instanceCfg: [
+      {
+        assertion = builtins.match "[a-zA-Z0-9][a-zA-Z0-9_-]*" instanceName != null;
+        message = ''
+          services.peer-observer.tools.archivers.${instanceName}: the attribute
+          name is used as the archiver's --base-name (the archive file name
+          prefix) and as part of the systemd unit name. It must start with a
+          letter or digit and may only contain letters, digits, '_' and '-'.
+        '';
+      }
+      {
+        # The archiver rejects --low-data without --messages and would exit
+        # right away, so catch it at evaluation time instead.
+        assertion = instanceCfg.lowData ->
+          (instanceCfg.events != null && elem "messages" instanceCfg.events);
+        message = ''
+          services.peer-observer.tools.archivers.${instanceName}: lowData only
+          strips data from P2P messages, so 'events' has to contain "messages".
+          Either add it, or unset lowData.
+        '';
+      }
+    ]) cfg.tools.archivers);
 
-  };
+    systemd.services = mapAttrs' mkArchiverService eachArchiver;
+  } ]);
 }
