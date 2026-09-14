@@ -8,10 +8,9 @@ let
   allPlatformsPkgs = rec {
     addrman-observer = pkgs.callPackage ./pkgs/addrman-observer { };
     asmap-data = pkgs.callPackage ./pkgs/asmap-data { };
-    bitcoind-tracing-v28 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v28.0"; };
-    bitcoind-tracing-v29 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v29.0"; useCmake = true; };
-    bitcoind-tracing-v30 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v30.0"; useCmake = true; };
-    bitcoind-tracing-v31 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v31.0"; useCmake = true; };
+    bitcoind-tracing-v29 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v29.4"; useCmake = true; };
+    bitcoind-tracing-v30 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v30.3"; useCmake = true; };
+    bitcoind-tracing-v31 = pkgs.callPackage ./pkgs/bitcoind-tracing { version = "v31.1"; useCmake = true; };
     bitcoind-tracing-latest = bitcoind-tracing-v31;
     discourse-archive = pkgs.callPackage ./pkgs/discourse-archive { };
     fork-observer = pkgs.callPackage ./pkgs/fork-observer { };
