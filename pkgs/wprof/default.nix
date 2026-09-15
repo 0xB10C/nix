@@ -13,13 +13,13 @@
 }:
 
 let
-  rev = "d35ec56db9f722accc2c1a67004a888d4c5f3f6f";
+  rev = "48190de04cec923d322d24b5f2523a4e4210ad4e";
 
   src = fetchFromGitHub {
     owner = "anakryiko";
     repo = "wprof";
     inherit rev;
-    hash = "sha256-05PYdfk/aiIMqLVX6xCSpjnax6Z8IhAy3c3UNkLosWg=";
+    hash = "sha256-hukD6XysZfXx+IoUL1npBK2lInV+8oYa1j3qsAR9QHA=";
     fetchSubmodules = true;
   };
 
@@ -72,7 +72,7 @@ in
 
 stdenv.mkDerivation {
   pname = "wprof";
-  version = "0-unstable-2026-06-02";
+  version = "sweep-orig-tip-unstable-2026-09-11";
   inherit src;
 
   nativeBuildInputs = [ clang pkg-config ];
