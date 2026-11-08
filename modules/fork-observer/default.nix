@@ -66,6 +66,20 @@ let
         description = "Maximum number of recent headers to serve via the API.";
       };
 
+      genesisHash = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example =
+          "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        description = ''
+          Genesis block hash the nodes of this network have to serve. Headers
+          are only fetched from a node serving this chain, which keeps a node
+          serving another chain out of the header tree. A node that can't be
+          asked for its genesis block hash is used as before. Recommended;
+          fork-observer warns at startup when unset.
+        '';
+      };
+
       activityRetentionDays = mkOption {
         type = types.nullOr types.int;
         default = null;
@@ -125,6 +139,8 @@ let
     """
     min_fork_height = ${toString network.minForkHeight}
     max_interesting_heights = ${toString network.maxInterestingHeights}
+    ${optionalString (network.genesisHash != null)
+    ''genesis_hash = "${network.genesisHash}"''}
     ${optionalString (network.activityRetentionDays != null)
     "activity_retention_days = ${toString network.activityRetentionDays}"}
     [networks.pool_identification]
