@@ -303,6 +303,18 @@ let
         '';
       };
 
+      preferredSyncSource = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Fetch headers from this node first: the network's other nodes wait
+          with their first header fetch until the preferred nodes are done (or
+          ran into an error, or 30 minutes passed). Worth setting on a node
+          that serves batches of headers (BitcoinCore with REST, block-dn)
+          when other nodes of the network don't.
+        '';
+      };
+
     };
   };
 
@@ -323,6 +335,7 @@ let
     use_waitfornewblock = ${boolToString node.useWaitForNewBlock}
     implementation = "${node.implementation}"
     activity_log = ${boolToString node.activityLog}
+    preferred_sync_source = ${boolToString node.preferredSyncSource}
 
   '';
 
