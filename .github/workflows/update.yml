@@ -81,7 +81,12 @@ jobs:
             git checkout -b $BRANCH
             CURRENT_HEAD=$(git log -1 --format=%H)
             # HACK: "... || true" to avoid failing when no update is avaliable
-            nix-shell -p nix-update --run "nix-update --flake --commit --version=branch ${{ matrix.package }} || true"
+            # With --version=branch, nix-update offers "<tag>-unstable-<date>" for each
+            # recent upstream release tag (plus "0-unstable-<date>") and picks the
+            # highest. For monorepos with prefixed tags (e.g. samply's
+            # "samply-symbols-v0.24.1") this changes the version prefix between runs.
+            # Pin to "0-unstable-<date>".
+            nix-shell -p nix-update --run "nix-update --flake --commit --version=branch --version-regex '^(0-unstable-.*)\$' ${{ matrix.package }} || true"
             NEW_HEAD=$(git log -1 --format=%H)
 
             if [ "$CURRENT_HEAD" = "$NEW_HEAD" ]; then
