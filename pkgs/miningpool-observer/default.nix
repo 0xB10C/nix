@@ -12,7 +12,8 @@ pkgs.rustPlatform.buildRustPackage rec {
     sha256 = "sha256-pATLQzdmAR8JDYEDDkynFPnYlfvkQfsHonU+bxRPQgc=";
   };
 
-  buildInputs = [ pkgs.postgresql ];
+  nativeBuildInputs = [ pkgs.pkg-config ];
+  buildInputs = with pkgs; [ postgresql zstd ];
 
   cargoLock = {
     lockFile = ./Cargo.lock;
