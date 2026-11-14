@@ -3,13 +3,13 @@
 rustPlatform.buildRustPackage rec {
   pname = "fork-observer";
   name = "fork-observer";
-  version = "f5ba3e993d067cb9701c851cc75bac427bf6c5f9";
+  version = "4f54fb8d2d21e6e7dbd0fbe09255dd42c26abc67";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "fork-observer";
     rev = version;
-    sha256 = "sha256-qrSQXTW+CkDdYaR/2xCr+2+y0FwAl4jvX1NxVxWpisI=";
+    sha256 = "sha256-+yCJcKBLroQwqtD1Zy6PfUwK4Cx/A6unfl8gt0L6Tjg=";
   };
 
   nativeBuildInputs = with pkgs; [ sqlite ];
@@ -19,7 +19,7 @@ rustPlatform.buildRustPackage rec {
   BITCOIND_SKIP_DOWNLOAD = "1";
   BITCOIND_EXE = "${pkgs.bitcoind}/bin/bitcoind";
 
-  cargoHash = "sha256-LWo75nAgWaTHnclOsEuO7powNrSvpG/YfvDu1KV65SI=";
+  cargoHash = "sha256-YAVaWba4mZi70oXy3+3ycay4m0JTwysb+us7mri0qM4=";
 
   postInstall = ''
     cp -r www $out/www
