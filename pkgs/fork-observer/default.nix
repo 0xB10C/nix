@@ -12,7 +12,8 @@ rustPlatform.buildRustPackage rec {
     sha256 = "sha256-qrSQXTW+CkDdYaR/2xCr+2+y0FwAl4jvX1NxVxWpisI=";
   };
 
-  nativeBuildInputs = with pkgs; [ sqlite ];
+  nativeBuildInputs = with pkgs; [ pkg-config ];
+  buildInputs = with pkgs; [ sqlite ];
 
   # during the integration tests, don't try to download a bitcoind binary
   # use the nix one instead

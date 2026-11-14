@@ -28,18 +28,19 @@ rustPlatform.buildRustPackage rec {
 
   buildInputs = with pkgs; [
     zlib
+    zstd
   ] ++ lib.optionals enableTracing [
     elfutils
   ];
 
   nativeBuildInputs = with pkgs; [
     protobuf
+    pkg-config
     cmake
     git
     capnproto
   ] ++ lib.optionals enableTracing [
     llvmPackages_20.clang-unwrapped
-    pkg-config
     rustfmt
   ];
 

@@ -1,6 +1,9 @@
 {
   lib,
   rustPlatform,
+  pkg-config,
+  sqlite,
+  zstd,
   fetchFromGitHub,
 }:
 
@@ -16,6 +19,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   cargoHash = "sha256-NFctaIv1bAnW62yE030HJRihVzidabrK3DWDZnxt3Zg=";
+
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ sqlite zstd ];
 
   meta = {
     description = "Command line profiler for macOS and Linux";
