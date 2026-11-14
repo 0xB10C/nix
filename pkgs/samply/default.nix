@@ -9,16 +9,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "samply";
-  version = "0-unstable-2026-05-13";
+  version = "0-unstable-2026-11-02";
 
   src = fetchFromGitHub {
     owner = "mstange";
     repo = "samply";
-    rev = "d31a3e9ed59f06d309d6984455c824a03a15f081";
-    hash = "sha256-wGYN38owi5ryz9bQX5BOD7D91eYxUE9R7nsSXGIyiLM=";
+    rev = "dea56099bba34dfc5da4a8c9365d90b6eabffac7";
+    hash = "sha256-ydBgyohIOtbvol1TvGfse2b8adhONge4G7x68sBOda0=";
   };
 
-  cargoHash = "sha256-NFctaIv1bAnW62yE030HJRihVzidabrK3DWDZnxt3Zg=";
+  cargoHash = "sha256-pncRQ0ZCw7ZUZvxZ9mSaZA8kOrvM1oQwHAG+6eQ6K0c=";
 
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ sqlite zstd ];
