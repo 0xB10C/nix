@@ -58,6 +58,20 @@ rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-GOswqe5rre4p0SB3f0JiOXz3886GMOsvylZwn/ed/EM=";
 
+  # The libbpf vendored by libbpf-sys ships its own linux/types.h, which shadows
+  # the kernel one and lacks __s128/__u128. Newer kernel headers use __u128 in
+  # arm64's asm/sigcontext.h and asm/ptrace.h, breaking the build on aarch64.
+  # Fixed in libbpf f90a9c487d ("include: add 128-bit integer types to
+  # linux/types.h"), but not yet in a libbpf-sys release. The flags are passed
+  # to make as CFLAGS (split on whitespace), so force-include a header instead
+  # of using -D.
+  LIBBPF_SYS_EXTRA_CFLAGS = lib.optionalString enableTracing "-include ${pkgs.writeText "libbpf-u128.h" ''
+    #ifdef __SIZEOF_INT128__
+    typedef __signed__ __int128 __s128 __attribute__((aligned(16)));
+    typedef unsigned __int128 __u128 __attribute__((aligned(16)));
+    #endif
+  ''}";
+
   # Set the path of the Linux kernel headers for the ebpf-extractor.
   KERNEL_HEADERS = lib.derivations.optionalDrvAttr enableTracing
     "${pkgs.linuxHeaders}/include";
