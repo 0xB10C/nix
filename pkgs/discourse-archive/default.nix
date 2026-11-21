@@ -5,7 +5,7 @@
 
 python3.pkgs.buildPythonPackage rec {
   pname = "discourse-archive";
-  version = "760becb61376f5149bf88b7e1393081e3ef14ae7";
+  version = "02f216c349e38cf4b25bc0e8d9a6167e96432f04";
 
   pyproject = true;
 
@@ -13,7 +13,7 @@ python3.pkgs.buildPythonPackage rec {
     owner = "0xB10C";
     repo = "discourse-archive";
     rev = version;
-    hash = "sha256-M5QdGTQphrMVGD1X3RtKS+fvRRNdPiKUVwHWrhZ7+pI=";
+    hash = "sha256-ZIJkt2TTAnUrs5GCHosOMSGZT8g0e3M/auYU/KonW50=";
   };
 
   # The repo uses a flat layout with multiple top-level modules (archive.py
