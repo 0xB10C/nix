@@ -3,13 +3,13 @@
 rustPlatform.buildRustPackage rec {
   pname = "stratum-observer";
   name = "stratum-observer";
-  version = "978d3f4b29642acb44f14bf9fb7c7ec93041a583";
+  version = "b0cdc7af6bec2803271c7f8b4fc2ae60e0c995c9";
 
   src = pkgs.fetchFromGitHub {
     owner = "0xB10C";
     repo = "stratum-observer";
     rev = version;
-    sha256 = "sha256-FzjgRdpr1HPE2jMgZlqvS7fj7YlpA2MYpuR55IsUv30=";
+    sha256 = "sha256-g2SmTcvTzYJSzkv3LrgFJsvRLpUf2l/ohx/zzYBYYhg=";
   };
 
   nativeBuildInputs = [ postgresql ];
